@@ -18,6 +18,11 @@
     height: 0;
 }
 
+.md li {
+    list-style: disc;
+    margin-left: 1em;
+}
+
 .table tr:nth-child(even), .table thead {
     background-color: rgba(208, 221, 240, 0.6);
 }

@@ -113,13 +113,13 @@ export default function Experiment({ transcript, location }: Props & { location:
         </div>
       </div>
 
-      {messageGroups.map((group, i) => <MessageGroup key={i} group={group} />)}
+      {messageGroups.map((group, i) => <MessageGroup key={i} group={group} users={transcript.users} />)}
 
     </Main>
   )
 }
 
-function MessageGroup({ group }: { group: MessageGroup }) {
+function MessageGroup({ group, users }: { group: MessageGroup, users: User[] }) {
   return <div className={`grid ${styles.gridAuto1} mt-2`}>
     <div className="w-11 h-11 mt-1">
       <img src={(group.user.avatar && `https://cdn.discordapp.com/avatars/${group.user.discordId}/${group.user.avatar}.png`) ?? "https://cdn.discordapp.com/attachments/247122362942619649/980958465566572604/unknown.png"} className="w-11 h-11 rounded-full" alt="Avatar" />
@@ -130,7 +130,7 @@ function MessageGroup({ group }: { group: MessageGroup }) {
       })}>{group.user.nickname ?? group.user.username}</span>
       <span className="text-sm text-slate-700 dark:text-slate-400 ml-2">{new Date(group.msg[0].createdAt).toLocaleString(undefined, { month: "long", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit", weekday: "short" })}</span>
       <div>
-        {group.msg.map((msg, j) => <Message key={j} msg={msg} />)}
+        {group.msg.map((msg, j) => <Message key={j} msg={msg} users={users} />)}
       </div>
     </div>
   </div>
@@ -141,19 +141,26 @@ interface Embed {
   description?: string
   color?: number
 }
-function Message({ msg }: { msg: Message }) {
+function Message({ msg, users }: { msg: Message, users: User[] }) {
   return <div className="mb-2">
-    <ReactMarkdown>{msg.content}</ReactMarkdown>
+    <ReactMarkdown className={styles.md} >{cleanUsers(msg.content, users)}</ReactMarkdown>
     <div>{msg.embeds.map(e => e as Embed).map((e, i) => <div key={i} className="flex max-w-xl">
       <div className="w-1 rounded-l" style={({ backgroundColor: Color(e.color ?? "#2F3136").hex() })} />
       <div className="flex flex-col p-2 rounded-r bg-slate-200 dark:bg-slate-800 dark:bg-opacity-50 bg-opacity-50">
         {e.title && <div className="font-bold">{e.title}</div>}
-        <ReactMarkdown>{e.description ?? ""}</ReactMarkdown>
+        <ReactMarkdown>{cleanUsers(e.description ?? "", users)}</ReactMarkdown>
       </div>
     </div>)}</div>
   </div>
 }
 
+
+function cleanUsers(msg: string, users: User[]): string {
+  return msg.replace(/<@(\d+)>/g, (_, id) => {
+    const u = users.find(u => u.discordId == id)
+    return `@${u?.nickname ?? u?.username ?? id}`
+  })
+}
 
 export async function getStaticProps(context: GetStaticPropsContext): Promise<GetStaticPropsResult<Props>> {
   try {
