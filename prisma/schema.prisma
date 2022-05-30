@@ -1,0 +1,131 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Ticket {
+  id            Int            @id @default(autoincrement())
+  createdAt     DateTime       @default(now())
+  type          String
+  status        String         @default("OPEN")
+  channelId     String         @unique
+  initialName   String
+  creator       User           @relation(fields: [userId, serverId], references: [discordId, serverId])
+  userId        String
+  server        Server         @relation(fields: [serverId], references: [id])
+  serverId      String
+  verifications Verification[]
+}
+
+model Transcript {
+  id               Int               @id @default(autoincrement())
+  slug             String            @unique
+  createdAt        DateTime          @default(now())
+  channelId        String
+  channelName      String
+  messages         Message[]
+  users            User[]
+  verifications    Verification[]
+  server           Server            @relation(fields: [serverId], references: [id])
+  serverId         String
+  QueuedTranscript QueuedTranscript?
+}
+
+model QueuedTranscript {
+  id            Int        @id @default(autoincrement())
+  createdAt     DateTime   @default(now())
+  channelId     String
+  channelName   String
+  botReplyId    String
+  botChannelId  String
+  dumpChannelId String?
+  upTo          String?
+  latest        String
+  fetched       Int        @default(0)
+  transcriber   User       @relation(fields: [transcriberId, serverId], references: [discordId, serverId])
+  transcriberId String
+  server        Server     @relation(fields: [serverId], references: [id])
+  serverId      String
+  transcript    Transcript @relation(fields: [transcriptId], references: [id])
+  transcriptId  Int        @unique
+}
+
+model Verification {
+  id           Int         @id @default(autoincrement())
+  createdAt    DateTime    @default(now())
+  channelId    String
+  channelName  String
+  verifier     User        @relation(fields: [userId, serverId], references: [discordId, serverId])
+  userId       String
+  server       Server      @relation(fields: [serverId], references: [id])
+  serverId     String
+  transcript   Transcript? @relation(fields: [transcriptId], references: [id])
+  transcriptId Int?
+  ticket       Ticket      @relation(fields: [ticketsId], references: [id])
+  ticketsId    Int
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  discordId String
+  server    Server   @relation(fields: [serverId], references: [id])
+  serverId  String
+  roleColor String?
+  nickname  String?
+  username  String?
+  tag       String?
+  avatar    String?
+  bot       Boolean?
+  verified  Boolean?
+
+  QueuedTranscript QueuedTranscript[]
+  Verification     Verification[]
+  Transcript       Transcript[]
+  Message          Message[]
+
+  Tickets Ticket[]
+  @@unique([discordId, serverId])
+}
+
+model Server {
+  id        String   @id
+  createdAt DateTime @default(now())
+  name      String
+  icon      String?
+
+  Transcript       Transcript[]
+  QueuedTranscript QueuedTranscript[]
+  Verification     Verification[]
+  User             User[]
+  Message          Message[]
+  Tickets          Ticket[]
+}
+
+model Message {
+  id        Int       @id @default(autoincrement())
+  discordId String
+  createdAt DateTime
+  editedAt  DateTime?
+
+  attachments Json[]
+  reactions   Json[]
+  embeds      Json[]
+  content     String
+  components  Json[]
+  stickers    Json[]
+  reply       String?
+
+  user         User       @relation(fields: [userId, serverId], references: [discordId, serverId])
+  userId       String
+  server       Server     @relation(fields: [serverId], references: [id])
+  serverId     String
+  Transcript   Transcript @relation(fields: [transcriptId], references: [id])
+  transcriptId Int
+}
