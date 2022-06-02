@@ -40,7 +40,6 @@ interface User {
 interface Props {
   transcript: {
     createdAt: number
-    channelId: string
     channelName: string
     messages: Message[]
     users: User[]
@@ -57,6 +56,16 @@ interface Props {
       serverId: string
       transcriptId: number | null
       ticketsId: number
+    }[]
+    mentionedChannels: {
+      discordId: string
+      name: string
+      type: string
+    }[]
+    mentionedRoles: {
+      discordId: string
+      name: string
+      roleColor: string | null
     }[]
   }
 }
@@ -139,16 +148,18 @@ function MessageGroup({ group, users }: { group: MessageGroup, users: User[] }) 
 interface Embed {
   title?: string
   description?: string
-  color?: number
+  color?: string
 }
 function Message({ msg, users }: { msg: Message, users: User[] }) {
   return <div className="mb-2">
     <ReactMarkdown className={styles.md} >{cleanUsers(msg.content, users)}</ReactMarkdown>
     <div>{msg.embeds.map(e => e as Embed).map((e, i) => <div key={i} className="flex max-w-xl">
-      <div className="w-1 rounded-l" style={({ backgroundColor: Color(e.color ?? "#2F3136").hex() })} />
+      <div className="w-1 rounded-l" style={({ backgroundColor: (e.color ?? "#2F3136") })} />
       <div className="flex flex-col p-2 rounded-r bg-slate-200 dark:bg-slate-800 dark:bg-opacity-50 bg-opacity-50">
         {e.title && <div className="font-bold">{e.title}</div>}
-        <ReactMarkdown>{cleanUsers(e.description ?? "", users)}</ReactMarkdown>
+        <div>
+          <ReactMarkdown>{cleanUsers(e.description ?? "", users)}</ReactMarkdown>
+        </div>
       </div>
     </div>)}</div>
   </div>
@@ -159,7 +170,7 @@ function cleanUsers(msg: string, users: User[]): string {
   return msg.replace(/<@(\d+)>/g, (_, id) => {
     const u = users.find(u => u.discordId == id)
     return `@${u?.nickname ?? u?.username ?? id}`
-  })
+  }).replace("\n", "\n\n")
 }
 
 export async function getStaticProps(context: GetStaticPropsContext): Promise<GetStaticPropsResult<Props>> {
@@ -179,6 +190,11 @@ export async function getStaticProps(context: GetStaticPropsContext): Promise<Ge
             discordId: "asc"
           }
         },
+        channel: {
+          select: {
+            name: true
+          }
+        },
         users: true,
         server: {
           select: {
@@ -187,7 +203,21 @@ export async function getStaticProps(context: GetStaticPropsContext): Promise<Ge
             icon: true
           }
         },
-        verifications: true
+        verifications: true,
+        mentionedChannels: {
+          select: {
+            discordId: true,
+            name: true,
+            type: true
+          }
+        },
+        mentionedRoles: {
+          select: {
+            discordId: true,
+            name: true,
+            roleColor: true
+          }
+        }
       }
     })
 
@@ -200,12 +230,13 @@ export async function getStaticProps(context: GetStaticPropsContext): Promise<Ge
     return {
       props: {
         transcript: {
-          channelId: transcript.channelId,
-          channelName: transcript.channelName,
+          channelName: transcript.channel.name,
           users: transcript.users,
           verifications: transcript.verifications.map(m => ({ ...m, createdAt: m.createdAt.getTime() })),
           server: transcript.server,
           messages: transcript.messages.map(m => ({ ...m, createdAt: m.createdAt.getTime(), editedAt: m.editedAt?.getTime() ?? null })),
+          mentionedChannels: transcript.mentionedChannels,
+          mentionedRoles: transcript.mentionedRoles,
           createdAt: transcript.createdAt.getTime()
         }
       },
