@@ -256,8 +256,8 @@ function Formatter({ content, transcript }: { transcript: Transcript, content: s
       // roleColor = user?.roleColor
     }
 
-    elements.push(<span key={i++} title={title} className={`${styles.mention} cursor-pointer`} style={({
-      background: roleColor ? Color(roleColor).desaturate(0.3).alpha(.3).hsl() as unknown as "#123456" : undefined
+    elements.push(<span key={i++} title={title} className={`${styles.mention} bg cursor-pointer bg-opacity-30 hover:bg-opacity-75 transition-all`} style={({
+      backgroundColor: roleColor ? `${Color(roleColor).desaturate(0.3).rgb().toString().replace(")", "")}, var(--tw-bg-opacity)` : undefined
     })}>{type.substring(0, 1)}{name}</span>)
 
     content = content.replace(full, "")
