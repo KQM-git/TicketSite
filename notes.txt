@@ -1,0 +1,13 @@
+
+Prisma in 100 Seconds https://youtu.be/rLRIB6AF2Dg?t=48
+NextAuth.js https://next-auth.js.org/adapters/prisma
+Authentication Patterns for Next.js https://youtu.be/NSR_Y_rm_zU?t=642
+
+https://www.prisma.io/docs/getting-started/setup-prisma/add-to-existing-project/relational-databases/connect-your-database-typescript-postgres
+
+https://www.prisma.io/docs/concepts/components/prisma-schema/data-model
+
+
+
+
+https://www.npmjs.com/package/@discord-message-components/react

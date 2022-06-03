@@ -1,10 +1,12 @@
 /* eslint-disable @next/next/no-img-element */
 
+import {
+  DiscordDefaultOptions, DiscordMarkdown, DiscordOptionsContext
+} from "@discord-message-components/react"
 import { Prisma, PrismaClient } from "@prisma/client"
 import Color from "color"
 import { GetStaticPathsResult, GetStaticPropsContext, GetStaticPropsResult } from "next"
 import Head from "next/head"
-import ReactMarkdown from "react-markdown"
 import Main from "../../components/Main"
 import { prisma } from "../../utils/utils"
 import styles from "../style.module.css"
@@ -57,17 +59,19 @@ interface Props {
       transcriptId: number | null
       ticketsId: number
     }[]
-    mentionedChannels: {
-      discordId: string
-      name: string
-      type: string
-    }[]
-    mentionedRoles: {
-      discordId: string
-      name: string
-      roleColor: string | null
-    }[]
+    mentionedChannels: Channel[]
+    mentionedRoles: Role[]
   }
+}
+interface Channel {
+  discordId: string
+  name: string
+  type: string
+}
+interface Role {
+  discordId: string
+  name: string
+  roleColor: string | null
 }
 
 interface MessageGroup {
@@ -122,24 +126,28 @@ export default function Experiment({ transcript, location }: Props & { location:
         </div>
       </div>
 
-      {messageGroups.map((group, i) => <MessageGroup key={i} group={group} users={transcript.users} />)}
+      <DiscordOptionsContext.Provider value={({
+        ...DiscordDefaultOptions,
+      })}>
+        {messageGroups.map((group, i) => <MessageGroup key={i} group={group} users={transcript.users} mentionedChannels={transcript.mentionedChannels} mentionedRoles={transcript.mentionedRoles} />)}
+      </DiscordOptionsContext.Provider>
 
     </Main>
   )
 }
 
-function MessageGroup({ group, users }: { group: MessageGroup, users: User[] }) {
+function MessageGroup({ group, users, mentionedChannels, mentionedRoles }: { group: MessageGroup, users: User[], mentionedChannels: Channel[], mentionedRoles: Role[] }) {
   return <div className={`grid ${styles.gridAuto1} mt-2`}>
     <div className="w-11 h-11 mt-1">
       <img src={(group.user.avatar && `https://cdn.discordapp.com/avatars/${group.user.discordId}/${group.user.avatar}.png`) ?? "https://cdn.discordapp.com/attachments/247122362942619649/980958465566572604/unknown.png"} className="w-11 h-11 rounded-full" alt="Avatar" />
     </div>
     <div className="ml-5 w-full">
-      <span className="font-semibold" style={({
+      <span className="font-semibold" title={`${group.user.username ?? "???"}#${group.user.tag}`} style={({
         color: group.user.roleColor == "#000000" ? undefined : group.user.roleColor ?? undefined
       })}>{group.user.nickname ?? group.user.username}</span>
       <span className="text-sm text-slate-700 dark:text-slate-400 ml-2">{new Date(group.msg[0].createdAt).toLocaleString(undefined, { month: "long", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit", weekday: "short" })}</span>
       <div>
-        {group.msg.map((msg, j) => <Message key={j} msg={msg} users={users} />)}
+        {group.msg.map((msg, j) => <Message key={j} msg={msg} users={users} mentionedChannels={mentionedChannels} mentionedRoles={mentionedRoles}/>)}
       </div>
     </div>
   </div>
@@ -150,28 +158,62 @@ interface Embed {
   description?: string
   color?: string
 }
-function Message({ msg, users }: { msg: Message, users: User[] }) {
+function Message({ msg, users, mentionedChannels, mentionedRoles }: { msg: Message, users: User[], mentionedChannels: Channel[], mentionedRoles: Role[]}) {
   return <div className="mb-2">
-    <ReactMarkdown className={styles.md} >{cleanUsers(msg.content, users)}</ReactMarkdown>
+    <Formatter content={msg.content} users={users} mentionedChannels={mentionedChannels} mentionedRoles={mentionedRoles} />
     <div>{msg.embeds.map(e => e as Embed).map((e, i) => <div key={i} className="flex max-w-xl">
       <div className="w-1 rounded-l" style={({ backgroundColor: (e.color ?? "#2F3136") })} />
       <div className="flex flex-col p-2 rounded-r bg-slate-200 dark:bg-slate-800 dark:bg-opacity-50 bg-opacity-50">
         {e.title && <div className="font-bold">{e.title}</div>}
-        <div>
-          <ReactMarkdown>{cleanUsers(e.description ?? "", users)}</ReactMarkdown>
+        <div className="text-sm">
+          <Formatter content={e.description ?? ""} users={users} mentionedChannels={mentionedChannels} mentionedRoles={mentionedRoles} />
         </div>
       </div>
     </div>)}</div>
   </div>
 }
 
+function Formatter({ content, users, mentionedChannels, mentionedRoles }: { users: User[], mentionedChannels: Channel[], mentionedRoles: Role[], content: string}) {
+  const any = /^(.*?)<(#|@&|@!?)(\d{17,19})>/
 
-function cleanUsers(msg: string, users: User[]): string {
-  return msg.replace(/<@(\d+)>/g, (_, id) => {
-    const u = users.find(u => u.discordId == id)
-    return `@${u?.nickname ?? u?.username ?? id}`
-  }).replace("\n", "\n\n")
+  const elements: JSX.Element[] = []
+  let i = 0
+
+  let match
+  while (match = content.match(any)) {
+    const [full, pre, type, id] = match
+    elements.push(<DiscordMarkdown key={i++}>{pre}</DiscordMarkdown>)
+
+    let name = id, roleColor, title
+    title = id
+    if (type == "#") {
+      const channel = mentionedChannels.find(c => c.discordId == id)
+      name = channel?.name ?? id
+    } else if (type == "@&") {
+      const role = mentionedRoles.find(c => c.discordId == id)
+      name = role?.name ?? id
+      roleColor = role?.roleColor
+    } else {
+      const user = users.find(c => c.discordId == id)
+      name = user?.nickname ?? user?.username ?? id
+      if (user?.username)
+        title = user.username + "#" + user.tag
+      // roleColor = user?.roleColor
+    }
+
+    elements.push(<span key={i++} title={title} className={`${styles.mention} cursor-pointer`} style={({
+      background: roleColor ? Color(roleColor).desaturate(0.3).alpha(.3).hsl() as unknown as "#123456" : undefined
+    })}>{type.substring(0, 1)}{name}</span>)
+
+    content = content.replace(full, "")
+  }
+  elements.push(<DiscordMarkdown key={i++}>{content}</DiscordMarkdown>)
+
+  return <span>
+    {elements}
+  </span>
 }
+
 
 export async function getStaticProps(context: GetStaticPropsContext): Promise<GetStaticPropsResult<Props>> {
   try {

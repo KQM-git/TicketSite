@@ -8,6 +8,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@discord-message-components/react": "^0.2.1",
     "@prisma/client": "^3.14.0",
     "color": "^4.2.3",
     "next": "12.1.0",

@@ -53,6 +53,16 @@
     }
 }
 
+.mention {
+    color: #dee0fc;
+    background-color: rgba(88, 101, 242, .3);
+    padding: 0 2px;
+    border-radius: 4px;
+}
+
+.mention:hover {
+    background-color: #5865f2
+}
 
 .mask {
   --mask-height: 12px;
