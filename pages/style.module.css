@@ -87,3 +87,11 @@
     grid-template-columns: auto 1fr;
     justify-items: start;
 }
+
+.highlight {
+    background-color: rgb(96 165 250 / 0.2);
+}
+
+.nothl {
+    background-color: rgb(96 165 250 / 0.0);
+}

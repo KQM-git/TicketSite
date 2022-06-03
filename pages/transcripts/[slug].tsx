@@ -189,7 +189,7 @@ interface Reaction {
 function Message({ msg, transcript, hl }: { msg: Message, transcript: Transcript, hl: string }) {
   msg.reactions.map(a => a as unknown as Reaction).map((r, i) => console.log(r))
 
-  return <div className={`mb-2 w-full ${hl == msg.discordId ? "bg-opacity-20" : "bg-opacity-0"} bg-blue-400 rounded-xl transition-all duration-200 ease-in-out`} id={msg.discordId}>
+  return <div className={`mb-2 w-full ${hl == msg.discordId ? styles.nothl : styles.highlight} bg-blue-400 rounded-xl transition-all duration-200 ease-in-out`} id={msg.discordId}>
     <Formatter content={msg.content} transcript={transcript} />
     {msg.embeds?.length > 0 && <div>{msg.embeds.map(e => e as Embed).map((e, i) => <div key={i} className={`grid ${styles.gridAuto1} max-w-xl`}>
       <div className="w-1 rounded-l" style={({ backgroundColor: (e.color ?? "#2F3136") })} />
