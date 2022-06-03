@@ -1,12 +1,12 @@
 /* eslint-disable @next/next/no-img-element */
 
-import {
-  DiscordDefaultOptions, DiscordMarkdown, DiscordOptionsContext
-} from "@discord-message-components/react"
+import { DiscordMarkdown, DiscordReactions } from "@discord-message-components/react"
 import { Prisma, PrismaClient } from "@prisma/client"
 import Color from "color"
 import { GetStaticPathsResult, GetStaticPropsContext, GetStaticPropsResult } from "next"
 import Head from "next/head"
+import { useEffect, useState } from "react"
+import Twemoji from "react-twemoji"
 import Main from "../../components/Main"
 import { prisma } from "../../utils/utils"
 import styles from "../style.module.css"
@@ -40,28 +40,29 @@ interface User {
 }
 
 interface Props {
-  transcript: {
-    createdAt: number
-    channelName: string
-    messages: Message[]
-    users: User[]
-    server: {
-      name: string;
-      id: string;
-      icon: string | null;
-    }
-    verifications: {
-      createdAt: number
-      channelId: string
-      channelName: string
-      userId: string
-      serverId: string
-      transcriptId: number | null
-      ticketsId: number
-    }[]
-    mentionedChannels: Channel[]
-    mentionedRoles: Role[]
+  transcript: Transcript
+}
+interface Transcript {
+  createdAt: number
+  channelName: string
+  messages: Message[]
+  users: User[]
+  server: {
+    name: string;
+    id: string;
+    icon: string | null;
   }
+  verifications: {
+    createdAt: number
+    channelId: string
+    channelName: string
+    userId: string
+    serverId: string
+    transcriptId: number | null
+    ticketsId: number
+  }[]
+  mentionedChannels: Channel[]
+  mentionedRoles: Role[]
 }
 interface Channel {
   discordId: string
@@ -80,13 +81,24 @@ interface MessageGroup {
 }
 
 export default function Experiment({ transcript, location }: Props & { location: string }) {
-  const desc = `${transcript.channelName}.`
+  const desc = `Transcript for ${transcript.channelName} (${transcript.messages.length} messages).`
+
+  const [hl, setHl] = useState("0")
+
+  useEffect(() => {
+    if (hl != "0") {
+      const id = setTimeout(() => {
+        setHl("0")
+      }, 2000)
+      return () => clearTimeout(id)
+    }
+  }, [hl])
 
   const messageGroups: MessageGroup[] = []
 
   for (const msg of transcript.messages) {
     const prev = messageGroups[messageGroups.length - 1]
-    if (msg.userId == prev?.user.discordId) {
+    if (msg.userId == prev?.user.discordId && !msg.reply) {
       prev.msg.push(msg)
     } else {
       messageGroups.push({
@@ -126,28 +138,28 @@ export default function Experiment({ transcript, location }: Props & { location:
         </div>
       </div>
 
-      <DiscordOptionsContext.Provider value={({
-        ...DiscordDefaultOptions,
-      })}>
-        {messageGroups.map((group, i) => <MessageGroup key={i} group={group} users={transcript.users} mentionedChannels={transcript.mentionedChannels} mentionedRoles={transcript.mentionedRoles} />)}
-      </DiscordOptionsContext.Provider>
+      {messageGroups.map((group, i) => <MessageGroup key={i} group={group} transcript={transcript} hl={hl} setHl={setHl} />)}
 
     </Main>
   )
 }
 
-function MessageGroup({ group, users, mentionedChannels, mentionedRoles }: { group: MessageGroup, users: User[], mentionedChannels: Channel[], mentionedRoles: Role[] }) {
-  return <div className={`grid ${styles.gridAuto1} mt-2`}>
-    <div className="w-11 h-11 mt-1">
-      <img src={(group.user.avatar && `https://cdn.discordapp.com/avatars/${group.user.discordId}/${group.user.avatar}.png`) ?? "https://cdn.discordapp.com/attachments/247122362942619649/980958465566572604/unknown.png"} className="w-11 h-11 rounded-full" alt="Avatar" />
+function MessageGroup({ group, transcript, hl, setHl }: { group: MessageGroup, transcript: Transcript, hl: string, setHl: (hl: string) => void }) {
+  return <div className={`grid ${styles.gridAuto1} mt-2`} id={group.msg[0]?.discordId}>
+    <div>
+      {group.msg[0]?.reply && <div className="h-4" />}
+      <div className="w-11 h-11 mt-2">
+        <img src={(group.user.avatar && `https://cdn.discordapp.com/avatars/${group.user.discordId}/${group.user.avatar}.png`) ?? "https://cdn.discordapp.com/attachments/247122362942619649/980958465566572604/unknown.png"} className="w-11 h-11 rounded-full" loading="lazy" alt="Avatar" />
+      </div>
     </div>
-    <div className="ml-5 w-full">
+    <div className="ml-5 w-max-full pr-4">
+      {group.msg[0]?.reply && <Reply replyId={group.msg[0].reply} transcript={transcript} setHl={setHl} />}
       <span className="font-semibold" title={`${group.user.username ?? "???"}#${group.user.tag}`} style={({
         color: group.user.roleColor == "#000000" ? undefined : group.user.roleColor ?? undefined
       })}>{group.user.nickname ?? group.user.username}</span>
       <span className="text-sm text-slate-700 dark:text-slate-400 ml-2">{new Date(group.msg[0].createdAt).toLocaleString(undefined, { month: "long", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit", weekday: "short" })}</span>
       <div>
-        {group.msg.map((msg, j) => <Message key={j} msg={msg} users={users} mentionedChannels={mentionedChannels} mentionedRoles={mentionedRoles}/>)}
+        {group.msg.map((msg, j) => <Message key={j} msg={msg} transcript={transcript} hl={hl} />)}
       </div>
     </div>
   </div>
@@ -166,25 +178,57 @@ interface Attachment {
   height?: string
   spoiler: boolean
 }
-function Message({ msg, users, mentionedChannels, mentionedRoles }: { msg: Message, users: User[], mentionedChannels: Channel[], mentionedRoles: Role[]}) {
-  return <div className="mb-2">
-    <Formatter content={msg.content} users={users} mentionedChannels={mentionedChannels} mentionedRoles={mentionedRoles} />
-    {msg.embeds?.length > 0 && <div>{msg.embeds.map(e => e as Embed).map((e, i) => <div key={i} className="flex max-w-xl">
+interface Reaction {
+  emoji: {
+    name?: string
+    id?: string
+    url?: string
+  }
+  count: number
+}
+function Message({ msg, transcript, hl }: { msg: Message, transcript: Transcript, hl: string }) {
+  msg.reactions.map(a => a as unknown as Reaction).map((r, i) => console.log(r))
+
+  return <div className={`mb-2 w-full ${hl == msg.discordId ? "bg-opacity-20" : "bg-opacity-0"} bg-blue-400 rounded-xl transition-all duration-200 ease-in-out`} id={msg.discordId}>
+    <Formatter content={msg.content} transcript={transcript} />
+    {msg.embeds?.length > 0 && <div>{msg.embeds.map(e => e as Embed).map((e, i) => <div key={i} className={`grid ${styles.gridAuto1} max-w-xl`}>
       <div className="w-1 rounded-l" style={({ backgroundColor: (e.color ?? "#2F3136") })} />
-      <div className="flex flex-col p-2 rounded-r bg-slate-200 dark:bg-slate-800 dark:bg-opacity-50 bg-opacity-50">
+      <div className="flex flex-col p-2 rounded-r bg-slate-200 dark:bg-slate-800 dark:bg-opacity-75 bg-opacity-75">
         {e.title && <div className="font-bold">{e.title}</div>}
         <div className="text-sm">
-          <Formatter content={e.description ?? ""} users={users} mentionedChannels={mentionedChannels} mentionedRoles={mentionedRoles} />
+          <Formatter content={e.description ?? ""} transcript={transcript} />
         </div>
       </div>
     </div>)}</div>}
     {msg.attachments?.length > 0 && <div>{msg.attachments.map(a => a as unknown as Attachment).map((a, i) => <div key={i} className={`flex max-w-xl ${a.spoiler ? "blur-xl hover:blur-0" : ""}`}>
-      <img src={a.url} width={a.width} height={a.height} alt={a.name} />
+      <img src={a.url} width={a.width} height={a.height} alt={a.name} loading="lazy" />
     </div>)}</div>}
+    {msg.reactions?.length > 0 && <DiscordReactions>
+        {msg.reactions.map(a => a as unknown as Reaction).map((r, i) => <div key={i} className="discord-reaction" title={r.emoji?.name ?? "unknown"}>
+            {r.emoji.url ? <img src={r.emoji.url} alt={r.emoji.name} className="d-emoji" loading="lazy" /> : <Twemoji noWrapper={true} options={{
+                className: "d-emoji"
+              }}>
+                <span>{r.emoji.name}</span>
+            </Twemoji>}
+            <span className="discord-reaction-count">{r.count}</span>
+          </div>)}
+      </DiscordReactions>}
   </div>
 }
 
-function Formatter({ content, users, mentionedChannels, mentionedRoles }: { users: User[], mentionedChannels: Channel[], mentionedRoles: Role[], content: string}) {
+
+function Reply({ replyId, transcript, setHl } : { replyId: string, transcript: Transcript, setHl: (hl: string) => void }) {
+  const msg = transcript.messages.find(u => u.discordId == replyId)
+  if (!msg)
+    return <div>
+      <a className="text-xs" href={`#${replyId}`}>Reply to an unknown message</a>
+    </div>
+  return <div className="overflow-hidden h-4 text-xs">
+    <a href={`#${replyId}`} onClick={() => setHl(replyId)} >Reply to <Formatter transcript={transcript} content={msg.content.split(/\n/)[0]}/></a>
+  </div>
+}
+
+function Formatter({ content, transcript }: { transcript: Transcript, content: string}) {
   const any = /^(.*?)<(#|@&|@!?)(\d{17,19})>/
 
   const elements: JSX.Element[] = []
@@ -198,14 +242,14 @@ function Formatter({ content, users, mentionedChannels, mentionedRoles }: { user
     let name = id, roleColor, title
     title = id
     if (type == "#") {
-      const channel = mentionedChannels.find(c => c.discordId == id)
+      const channel = transcript.mentionedChannels.find(c => c.discordId == id)
       name = channel?.name ?? id
     } else if (type == "@&") {
-      const role = mentionedRoles.find(c => c.discordId == id)
+      const role = transcript.mentionedRoles.find(c => c.discordId == id)
       name = role?.name ?? id
       roleColor = role?.roleColor
     } else {
-      const user = users.find(c => c.discordId == id)
+      const user = transcript.users.find(c => c.discordId == id)
       name = user?.nickname ?? user?.username ?? id
       if (user?.username)
         title = user.username + "#" + user.tag
@@ -220,9 +264,13 @@ function Formatter({ content, users, mentionedChannels, mentionedRoles }: { user
   }
   elements.push(<DiscordMarkdown key={i++}>{content}</DiscordMarkdown>)
 
-  return <span>
-    {elements}
-  </span>
+  return <Twemoji noWrapper={true} options={{
+    className: "d-emoji"
+  }}>
+    <span>
+      {elements}
+    </span>
+  </Twemoji>
 }
 
 

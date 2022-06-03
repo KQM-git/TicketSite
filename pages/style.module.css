@@ -54,14 +54,24 @@
 }
 
 .mention {
-    color: #dee0fc;
-    background-color: rgba(88, 101, 242, .3);
+    color: #3d3c3cdf;
+    background-color: rgba(127, 138, 255, 0.3);
     padding: 0 2px;
     border-radius: 4px;
 }
 
 .mention:hover {
-    background-color: #5865f2
+    background-color: #c4c8ff
+}
+
+@media (prefers-color-scheme: dark) {
+    .mention {
+        color: #dee0fc;
+        background-color: rgba(88, 101, 242, .3);
+    }
+    .mention:hover {
+        background-color: #5865f2
+    }
 }
 
 .mask {
@@ -82,4 +92,5 @@
 
 .gridAuto1 {
     grid-template-columns: auto 1fr;
+    justify-items: start;
 }

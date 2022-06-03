@@ -42,7 +42,43 @@ thead {
 .d-emoji {
     display: inline-block;
     object-fit: contain;
-    width: 1.375em;
-    height: 1.375em;
+    width: 1.3em;
+    height: 1.3em;
     vertical-align: bottom;
+}
+.discord-reactions .discord-reaction {
+    background-color: #9a9fa96c;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 .4em;
+    border-radius: 4px;
+    margin-right: 2px;
+    margin-bottom: 2px;
+    border: 1px solid transparent;
+    transition: background-color .1s ease, border-color .1s ease
+}
+
+.discord-reactions .discord-reaction:hover {
+    background-color: #727781a3;
+    border-color: rgba(105, 105, 105, 0.3)
+}
+
+.discord-reactions .discord-reaction .discord-reaction-count {
+    margin-left: 6px
+}
+
+.discord-reactions {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 2px 0
+}
+
+@media (prefers-color-scheme: dark) {
+    .discord-reactions .discord-reaction {
+        background-color: #1c1d1f6c;
+    }    
+    .discord-reactions .discord-reaction:hover {
+        background-color: #27292da3;
+        border-color: rgba(255, 255, 255, 0.3)
+    }
 }
