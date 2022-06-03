@@ -158,10 +158,18 @@ interface Embed {
   description?: string
   color?: string
 }
+interface Attachment {
+  name?: string
+  url: string
+  size: string
+  width?: string
+  height?: string
+  spoiler: boolean
+}
 function Message({ msg, users, mentionedChannels, mentionedRoles }: { msg: Message, users: User[], mentionedChannels: Channel[], mentionedRoles: Role[]}) {
   return <div className="mb-2">
     <Formatter content={msg.content} users={users} mentionedChannels={mentionedChannels} mentionedRoles={mentionedRoles} />
-    <div>{msg.embeds.map(e => e as Embed).map((e, i) => <div key={i} className="flex max-w-xl">
+    {msg.embeds?.length > 0 && <div>{msg.embeds.map(e => e as Embed).map((e, i) => <div key={i} className="flex max-w-xl">
       <div className="w-1 rounded-l" style={({ backgroundColor: (e.color ?? "#2F3136") })} />
       <div className="flex flex-col p-2 rounded-r bg-slate-200 dark:bg-slate-800 dark:bg-opacity-50 bg-opacity-50">
         {e.title && <div className="font-bold">{e.title}</div>}
@@ -169,7 +177,10 @@ function Message({ msg, users, mentionedChannels, mentionedRoles }: { msg: Messa
           <Formatter content={e.description ?? ""} users={users} mentionedChannels={mentionedChannels} mentionedRoles={mentionedRoles} />
         </div>
       </div>
-    </div>)}</div>
+    </div>)}</div>}
+    {msg.attachments?.length > 0 && <div>{msg.attachments.map(a => a as unknown as Attachment).map((a, i) => <div key={i} className={`flex max-w-xl ${a.spoiler ? "blur-xl hover:blur-0" : ""}`}>
+      <img src={a.url} width={a.width} height={a.height} alt={a.name} />
+    </div>)}</div>}
   </div>
 }
 
