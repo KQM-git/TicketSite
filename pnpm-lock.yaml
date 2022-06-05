@@ -9,6 +9,7 @@ specifiers:
   '@types/react': 17.0.39
   autoprefixer: ^10.4.2
   color: ^4.2.3
+  copy-to-clipboard: ^3.3.1
   eslint: 8.10.0
   eslint-config-next: 12.1.0
   next: 12.1.0
@@ -27,6 +28,7 @@ dependencies:
   '@discord-message-components/react': 0.2.1_react-dom@17.0.2+react@17.0.2
   '@prisma/client': 3.14.0_prisma@3.14.0
   color: 4.2.3
+  copy-to-clipboard: 3.3.1
   next: 12.1.0_react-dom@17.0.2+react@17.0.2
   node-fetch: 2.6.7
   react: 17.0.2
@@ -798,6 +800,12 @@ packages:
 
   /console-control-strings/1.1.0:
     resolution: {integrity: sha1-PXz0Rk22RG6mRL9LOVB/mFEAjo4=}
+    dev: false
+
+  /copy-to-clipboard/3.3.1:
+    resolution: {integrity: sha512-i13qo6kIHTTpCm8/Wup+0b1mVWETvu2kIMzKoK8FpkLkFxlt0znUAHcMzox+T8sPlqtZXq3CulEjQHsYiGFJUw==}
+    dependencies:
+      toggle-selection: 1.0.6
     dev: false
 
   /core-js-pure/3.21.1:
@@ -2962,6 +2970,10 @@ packages:
     dependencies:
       is-number: 7.0.0
     dev: true
+
+  /toggle-selection/1.0.6:
+    resolution: {integrity: sha1-bkWxJj8gF/oKzH2J14sVuL932jI=}
+    dev: false
 
   /tr46/0.0.3:
     resolution: {integrity: sha1-gYT9NH2snNwYWZLzpmIuFLnZq2o=}

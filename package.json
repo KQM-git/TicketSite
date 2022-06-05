@@ -11,6 +11,7 @@
     "@discord-message-components/react": "^0.2.1",
     "@prisma/client": "^3.14.0",
     "color": "^4.2.3",
+    "copy-to-clipboard": "^3.3.1",
     "next": "12.1.0",
     "node-fetch": "^2.6.7",
     "react": "17.0.2",

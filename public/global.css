@@ -26,6 +26,13 @@ th {
 thead {
     text-align: left;
 }
+h3 {
+    font-size: 32px;
+}
+p {
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
 
 
 @media (prefers-color-scheme: dark) {

@@ -10,6 +10,8 @@ import Twemoji from "react-twemoji"
 import Main from "../../components/Main"
 import { prisma } from "../../utils/utils"
 import styles from "../style.module.css"
+import copy from "copy-to-clipboard"
+import ReactMarkdown from "react-markdown"
 
 interface Message {
   discordId: string
@@ -44,6 +46,7 @@ interface Props {
 }
 interface Transcript {
   createdAt: number
+  slug: string
   server: {
     name: string;
     id: string;
@@ -120,6 +123,7 @@ export default function Experiment({ transcript, location }: Props & { location:
         <meta name="description" content={desc} />
       </Head>
 
+      <Evidence transcript={transcript} />
       <div className={`grid ${styles.gridAuto1} gap-2`}>
         <img src={(transcript.server.icon && `https://cdn.discordapp.com/icons/${transcript.server.id}/${transcript.server.icon}.png`) ?? "./img/empty.png"} width={128} height={128} className="w-24 h-24" alt="Server Icon" />
         <div className="text-xl font-semibold">
@@ -133,6 +137,90 @@ export default function Experiment({ transcript, location }: Props & { location:
 
     </Main>
   )
+}
+
+function Evidence({ transcript }: {transcript: Transcript}) {
+  const { messages, users, slug } = transcript
+
+  let finding = "Finding: *Unknown*", evidence = "Evidence: *Unknown*", significance = "Significance: *Unknown*"
+  let nick = "Unknown", tag = "????"
+
+  for (const message of messages) {
+      const content = message.content
+      if (!content) continue
+
+      if (content.match(/\**(Finding|Theory|Bug|Theory\/Finding\/Bug)\**:\**/i)) {
+          finding = content
+          evidence = ""
+          significance = ""
+      } else if (content.match(/\**Evidence\**:\**/i)) {
+          evidence = content
+          significance = ""
+      } else if (content.match(/\**Significance\**:\**/i)) {
+          significance = content
+      } else
+          continue
+
+      const user = users.find(u => u.discordId == message.userId)
+      nick = user?.username ?? "Unknown"
+      tag = user?.tag ?? "????"
+  }
+
+  const date = new Date(transcript.createdAt).toISOString().split("T")[0]
+
+  const findings = `${finding}
+
+${evidence}
+
+${significance}`
+  .replace(/\**(Finding|Theory|Bug|Theory\/Finding\/Bug|Evidence|Significance)\**:\**\s*/gi, (_, a) => `**${a}:**  \n`)
+  .replace(/(https?:\/\/.*)(\s)/g, (_, url, w) => `[${getDomain(url)}](${url})${w}`)
+  .trim()
+
+  const beautifiedChannel = transcript.channelName
+    .replace(/-/g, " ")
+    .replace(/^./, (a) => a.toUpperCase())
+    .replace(/(^|\s)./g, (a) => ["a", "to", "the"].includes(a) ? a : a.toUpperCase())
+
+  const md = `### ${beautifiedChannel}
+
+**By:** ${nick}\\#${tag}  
+**Added:** ${date}  
+[Discussion](https://tickets.deeznuts.moe/transcripts/${slug})
+
+${findings}
+`.trim()
+
+  const [expanded, setExpanded] = useState(false)
+  return expanded ?
+      <div className="dark:bg-slate-600 bg-slate-300 rounded-xl my-2 p-2">
+        <button onClick={() => {
+          copy(md, {
+            format: "text/plain"
+          })
+        }} className="bg-blue-600 disabled:bg-gray-900 text-slate-50 disabled:text-slate-400 w-fit px-3 py-1 text-center rounded-lg mr-2 cursor-pointer float-right">Copy evidence markdown template to clipboard</button>
+        <button onClick={() => {
+          setExpanded(false)
+        }} className="bg-red-600 disabled:bg-gray-900 text-slate-50 disabled:text-slate-400 w-fit px-3 py-1 text-center rounded-lg mr-2 cursor-pointer float-right">Close evidence markdown</button>
+
+        <ReactMarkdown>{md}</ReactMarkdown>
+        <hr className="opacity-80"/>
+        <textarea value={md} className="bg-slate-500 w-full my-2 h-72" />
+        <div className="clear-both"></div>
+      </div>
+         :
+      <button onClick={() => {
+        setExpanded(true)
+      }} className="bg-green-600 disabled:bg-gray-900 text-slate-50 disabled:text-slate-400 w-fit px-3 py-1 text-center rounded-lg mt-3 cursor-pointer float-right">Show evidence markdown</button>
+}
+
+function getDomain(str: string) {
+  const url = new URL(str)
+  if (["youtube.com", "youtu.be"].includes(url.hostname))
+      return "YouTube"
+  if (["i.imgur.com", "imgur.com"].includes(url.hostname))
+      return "Imgur"
+  return url.hostname
 }
 
 function MessageGroup({ group, transcript, hl, setHl }: { group: MessageGroup, transcript: Transcript, hl: string, setHl: (hl: string) => void }) {
@@ -321,6 +409,7 @@ export async function getStaticProps(context: GetStaticPropsContext): Promise<Ge
     return {
       props: {
         transcript: {
+          slug: transcript.slug,
           channelName: transcript.channel.name,
           users: transcript.users,
           server: transcript.server,
