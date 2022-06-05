@@ -193,7 +193,7 @@ ${findings}
 
   const [expanded, setExpanded] = useState(false)
   return expanded ?
-      <div className="dark:bg-slate-600 bg-slate-300 rounded-xl my-2 p-2">
+      <div className="dark:bg-slate-600 bg-slate-200 rounded-xl my-2 p-2">
         <button onClick={() => {
           copy(md, {
             format: "text/plain"
@@ -205,7 +205,7 @@ ${findings}
 
         <ReactMarkdown>{md}</ReactMarkdown>
         <hr className="opacity-80"/>
-        <textarea value={md} className="bg-slate-500 w-full my-2 h-72" />
+        <textarea value={md} className="dark:bg-slate-500 bg-slate-300 w-full my-2 h-72" />
         <div className="clear-both"></div>
       </div>
          :
