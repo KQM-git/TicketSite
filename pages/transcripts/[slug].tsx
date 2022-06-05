@@ -44,23 +44,14 @@ interface Props {
 }
 interface Transcript {
   createdAt: number
-  channelName: string
-  messages: Message[]
-  users: User[]
   server: {
     name: string;
     id: string;
     icon: string | null;
   }
-  verifications: {
-    createdAt: number
-    channelId: string
-    channelName: string
-    userId: string
-    serverId: string
-    transcriptId: number | null
-    ticketsId: number
-  }[]
+  channelName: string
+  messages: Message[]
+  users: User[]
   mentionedChannels: Channel[]
   mentionedRoles: Role[]
 }
@@ -304,7 +295,6 @@ export async function getStaticProps(context: GetStaticPropsContext): Promise<Ge
             icon: true
           }
         },
-        verifications: true,
         mentionedChannels: {
           select: {
             discordId: true,
@@ -333,7 +323,6 @@ export async function getStaticProps(context: GetStaticPropsContext): Promise<Ge
         transcript: {
           channelName: transcript.channel.name,
           users: transcript.users,
-          verifications: transcript.verifications.map(m => ({ ...m, createdAt: m.createdAt.getTime() })),
           server: transcript.server,
           messages: transcript.messages.map(m => ({ ...m, createdAt: m.createdAt.getTime(), editedAt: m.editedAt?.getTime() ?? null })),
           mentionedChannels: transcript.mentionedChannels,
