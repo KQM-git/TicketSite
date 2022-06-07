@@ -57,6 +57,7 @@ interface Transcript {
   users: User[]
   mentionedChannels: Channel[]
   mentionedRoles: Role[]
+  queuedBy: string | null
 }
 interface Channel {
   discordId: string
@@ -124,12 +125,13 @@ export default function Experiment({ transcript, location }: Props & { location:
       </Head>
 
       <Evidence transcript={transcript} />
+      {transcript.queuedBy && <div className="font-bold text-4xl text-red-700 dark:text-red-400">This ticket is still being transcribed, please wait until all messages have been added...</div>}
       <div className={`grid ${styles.gridAuto1} gap-2`}>
         <img src={(transcript.server.icon && `https://cdn.discordapp.com/icons/${transcript.server.id}/${transcript.server.icon}.png`) ?? "./img/empty.png"} width={128} height={128} className="w-24 h-24" alt="Server Icon" />
         <div className="text-xl font-semibold">
           <div>{transcript.server.name}</div>
           <div>{transcript.channelName}</div>
-          <div>{transcript.messages.length} messages</div>
+          <div>{transcript.messages.length} messages {transcript.queuedBy ? "fetched so far" : ""}</div>
         </div>
       </div>
 
@@ -396,6 +398,15 @@ export async function getStaticProps(context: GetStaticPropsContext): Promise<Ge
             name: true,
             roleColor: true
           }
+        },
+        queuedTranscript: {
+          select: {
+            transcriber: {
+              select: {
+                username: true
+              }
+            }
+          }
         }
       }
     })
@@ -403,7 +414,7 @@ export async function getStaticProps(context: GetStaticPropsContext): Promise<Ge
     if (!transcript) {
       return {
         notFound: true,
-        revalidate: 15 * 60
+        revalidate: 5 * 60
       }
     }
     return {
@@ -416,10 +427,11 @@ export async function getStaticProps(context: GetStaticPropsContext): Promise<Ge
           messages: transcript.messages.map(m => ({ ...m, createdAt: m.createdAt.getTime(), editedAt: m.editedAt?.getTime() ?? null })),
           mentionedChannels: transcript.mentionedChannels,
           mentionedRoles: transcript.mentionedRoles,
-          createdAt: transcript.createdAt.getTime()
+          createdAt: transcript.createdAt.getTime(),
+          queuedBy: transcript.queuedTranscript?.transcriber?.username ?? null
         }
       },
-      revalidate: 60 * 60 * 1
+      revalidate: transcript.queuedTranscript ? 60 : 3600
     }
   } catch (error) {
     return {
