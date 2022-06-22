@@ -3,16 +3,16 @@
 import { DiscordMarkdown, DiscordReactions } from "@discord-message-components/react"
 import { Prisma, PrismaClient } from "@prisma/client"
 import Color from "color"
+import copy from "copy-to-clipboard"
 import { GetStaticPathsResult, GetStaticPropsContext, GetStaticPropsResult } from "next"
 import Head from "next/head"
-import { useEffect, useState } from "react"
+import { useState } from "react"
+import ReactMarkdown from "react-markdown"
 import Twemoji from "react-twemoji"
+import FormattedLink from "../../components/FormattedLink"
 import Main from "../../components/Main"
 import { prisma } from "../../utils/utils"
 import styles from "../style.module.css"
-import copy from "copy-to-clipboard"
-import ReactMarkdown from "react-markdown"
-import FormattedLink from "../../components/FormattedLink"
 
 interface Message {
   discordId: string
@@ -215,6 +215,7 @@ function getDomain(str: string) {
   return url.hostname
 }
 
+const dateFormatter = new Intl.DateTimeFormat(undefined, { month: "long", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit", weekday: "short" })
 function MessageGroup({ group, transcript }: { group: MessageGroup, transcript: Transcript }) {
   return <div className={`grid ${styles.gridAuto1} mt-2`} id={group.msg[0]?.discordId}>
     <div>
@@ -228,7 +229,7 @@ function MessageGroup({ group, transcript }: { group: MessageGroup, transcript: 
       <span className="font-semibold" title={`${group.user.username ?? "???"}#${group.user.tag}`} style={({
         color: group.user.roleColor == "#000000" ? undefined : group.user.roleColor ?? undefined
       })}>{group.user.nickname ?? group.user.username}</span>
-      <span className="text-sm text-slate-700 dark:text-slate-400 ml-2">{new Date(group.msg[0].createdAt).toLocaleString(undefined, { month: "long", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit", weekday: "short" })}</span>
+      <span className="text-sm text-slate-700 dark:text-slate-400 ml-2">{dateFormatter.format(group.msg[0].createdAt)}</span>
       <div>
         {group.msg.map((msg, j) => <Message key={j} msg={msg} transcript={transcript} />)}
       </div>
