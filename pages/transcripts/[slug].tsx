@@ -12,6 +12,7 @@ import { prisma } from "../../utils/utils"
 import styles from "../style.module.css"
 import copy from "copy-to-clipboard"
 import ReactMarkdown from "react-markdown"
+import FormattedLink from "../../components/FormattedLink"
 
 interface Message {
   discordId: string
@@ -78,17 +79,6 @@ interface MessageGroup {
 export default function Experiment({ transcript, location }: Props & { location: string }) {
   const desc = `Transcript for ${transcript.channelName} (${transcript.messages.length} messages).`
 
-  const [hl, setHl] = useState("0")
-
-  useEffect(() => {
-    if (hl != "0") {
-      const id = setTimeout(() => {
-        setHl("0")
-      }, 2000)
-      return () => clearTimeout(id)
-    }
-  }, [hl])
-
   const messageGroups: MessageGroup[] = []
 
   for (const msg of transcript.messages) {
@@ -135,7 +125,7 @@ export default function Experiment({ transcript, location }: Props & { location:
         </div>
       </div>
 
-      {messageGroups.map((group, i) => <MessageGroup key={i} group={group} transcript={transcript} hl={hl} setHl={setHl} />)}
+      {messageGroups.map((group, i) => <MessageGroup key={i} group={group} transcript={transcript} />)}
 
     </Main>
   )
@@ -225,7 +215,7 @@ function getDomain(str: string) {
   return url.hostname
 }
 
-function MessageGroup({ group, transcript, hl, setHl }: { group: MessageGroup, transcript: Transcript, hl: string, setHl: (hl: string) => void }) {
+function MessageGroup({ group, transcript }: { group: MessageGroup, transcript: Transcript }) {
   return <div className={`grid ${styles.gridAuto1} mt-2`} id={group.msg[0]?.discordId}>
     <div>
       {group.msg[0]?.reply && <div className="h-4" />}
@@ -234,30 +224,32 @@ function MessageGroup({ group, transcript, hl, setHl }: { group: MessageGroup, t
       </div>
     </div>
     <div className="ml-5 w-max-full pr-4">
-      {group.msg[0]?.reply && <Reply replyId={group.msg[0].reply} transcript={transcript} setHl={setHl} />}
+      {group.msg[0]?.reply && <Reply replyId={group.msg[0].reply} transcript={transcript} />}
       <span className="font-semibold" title={`${group.user.username ?? "???"}#${group.user.tag}`} style={({
         color: group.user.roleColor == "#000000" ? undefined : group.user.roleColor ?? undefined
       })}>{group.user.nickname ?? group.user.username}</span>
       <span className="text-sm text-slate-700 dark:text-slate-400 ml-2">{new Date(group.msg[0].createdAt).toLocaleString(undefined, { month: "long", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit", weekday: "short" })}</span>
       <div>
-        {group.msg.map((msg, j) => <Message key={j} msg={msg} transcript={transcript} hl={hl} />)}
+        {group.msg.map((msg, j) => <Message key={j} msg={msg} transcript={transcript} />)}
       </div>
     </div>
   </div>
 }
 
-interface Embed {
+interface EmbedData {
   title?: string
   description?: string
   color?: string
+  thumbnail?: AttachmentData
+  image?: AttachmentData
 }
-interface Attachment {
+interface AttachmentData {
   name?: string
   url: string
-  size: string
+  size?: number
   width?: string
   height?: string
-  spoiler: boolean
+  spoiler?: boolean
 }
 interface Reaction {
   emoji: {
@@ -267,23 +259,11 @@ interface Reaction {
   }
   count: number
 }
-function Message({ msg, transcript, hl }: { msg: Message, transcript: Transcript, hl: string }) {
-  msg.reactions.map(a => a as unknown as Reaction).map((r, i) => console.log(r))
-
-  return <div className={`mb-2 w-full ${hl == msg.discordId ? styles.highlight : styles.nothl} rounded-lg`} id={msg.discordId}>
+function Message({ msg, transcript, }: { msg: Message, transcript: Transcript }) {
+  return <div className="mb-1 w-full rounded-lg" id={msg.discordId}>
     <Formatter content={msg.content} transcript={transcript} />
-    {msg.embeds?.length > 0 && <div>{msg.embeds.map(e => e as Embed).map((e, i) => <div key={i} className={`grid ${styles.gridAuto1} max-w-xl`}>
-      <div className="w-1 rounded-l" style={({ backgroundColor: (e.color ?? "#2F3136") })} />
-      <div className="flex flex-col p-2 rounded-r bg-slate-200 dark:bg-slate-800 dark:bg-opacity-75 bg-opacity-75">
-        {e.title && <div className="font-bold">{e.title}</div>}
-        <div className="text-sm">
-          <Formatter content={e.description ?? ""} transcript={transcript} />
-        </div>
-      </div>
-    </div>)}</div>}
-    {msg.attachments?.length > 0 && <div>{msg.attachments.map(a => a as unknown as Attachment).map((a, i) => <div key={i} className={`flex max-w-xl ${a.spoiler ? "blur-xl hover:blur-0" : ""}`}>
-      <img src={a.url} width={a.width} height={a.height} alt={a.name} loading="lazy" />
-    </div>)}</div>}
+    {msg.embeds?.length > 0 && <div>{msg.embeds.map((e, i) => <Embed key={i} e={e as EmbedData} transcript={transcript} />)}</div>}
+    {msg.attachments?.length > 0 && <div>{msg.attachments.map((a, i) => <Attachment key={i} a={a as unknown as AttachmentData}/>)}</div>}
     {msg.reactions?.length > 0 && <DiscordReactions>
         {msg.reactions.map(a => a as unknown as Reaction).map((r, i) => <div key={i} className="discord-reaction" title={r.emoji?.name ?? "unknown"}>
             {r.emoji.url ? <img src={r.emoji.url} alt={r.emoji.name} className="d-emoji" loading="lazy" /> : <Twemoji noWrapper={true} options={{
@@ -297,15 +277,61 @@ function Message({ msg, transcript, hl }: { msg: Message, transcript: Transcript
   </div>
 }
 
+function Attachment({ a }: { a: AttachmentData }) {
+  const url = new URL(a.url)
+  if ([".png", ".jpg", ".jpeg", ".gif", ".webp"].some(x => url.pathname.toLowerCase().endsWith(x)))
+    return <div className={`flex max-w-xl ${a.spoiler ? "blur-xl hover:blur-0" : ""} my-1`}>
+      <img src={a.url} width={a.width} height={a.height} alt={a.name} loading="lazy" />
+    </div>
 
-function Reply({ replyId, transcript, setHl } : { replyId: string, transcript: Transcript, setHl: (hl: string) => void }) {
+  if ([".mp4", ".mov", ".webm", ".avi", ".flv"].some(x => url.pathname.toLowerCase().endsWith(x)))
+    return <div className={`flex max-w-xl ${a.spoiler ? "blur-xl hover:blur-0" : ""} my-1`}>
+      <video src={a.url} width={a.width} height={a.height} title={a.name} controls />
+    </div>
+
+  return <div className={`flex items-center max-w-xl ${a.spoiler ? "blur-xl hover:blur-0" : ""} my-1 bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-900 rounded-lg`}>
+    <img src="/img/attachment.png" alt="Attachment" width={72} height={96} className="h-10 m-2 ml-3 w-auto"/>
+    <div className="m-1">
+      <FormattedLink href={a.url} target="_blank">Attachment: {a.name}</FormattedLink>
+      <div className="opacity-80">({a.size ? size(a.size) : "?"})</div>
+    </div>
+  </div>
+}
+
+function size(a: number) {
+  if (a < 1024) return `${a}B`
+  if (a < 100 * 1024) return `${(a/1024).toFixed(2)}KB`
+  if (a < 1024 * 1024) return `${(a/1024).toFixed(1)}KB`
+  if (a < 100 * 1024 * 1024) return `${(a/1024/1024).toFixed(2)}MB`
+  return `${(a/1024/1024).toFixed(1)}MB`
+}
+
+function Embed({ e, transcript }: { e: EmbedData, transcript: Transcript }) {
+  if (!e.title && !e.description && e.thumbnail)
+    return <Attachment a={e.thumbnail} />
+
+  return <div className={`grid ${styles.gridAuto1} max-w-xl`}>
+    <div className="w-1 rounded-l" style={({ backgroundColor: (e.color ?? "#2F3136") })} />
+    <div className="flex flex-col p-2 rounded-r bg-slate-200 dark:bg-slate-800 dark:bg-opacity-75 bg-opacity-75">
+      {e.title && <div className="font-bold">{e.title}</div>}
+      {e.description &&
+        <div className="text-sm">
+          <Formatter content={e.description} transcript={transcript} />
+        </div>}
+      {e.image && <div className="mt-2"><Attachment a={e.image} /></div>}
+    </div>
+  </div>
+}
+
+
+function Reply({ replyId, transcript } : { replyId: string, transcript: Transcript }) {
   const msg = transcript.messages.find(u => u.discordId == replyId)
   if (!msg)
     return <div>
       <a className="text-xs" href={`#${replyId}`}>Reply to an unknown message</a>
     </div>
   return <div className="overflow-hidden h-4 text-xs">
-    <a href={`#${replyId}`} onClick={() => setHl(replyId)} >Reply to <Formatter transcript={transcript} content={msg.content.split(/\n/)[0]}/></a>
+    <a href={`#${replyId}`} >Reply to <Formatter transcript={transcript} content={msg.content.split(/\n/)[0]}/></a>
   </div>
 }
 
