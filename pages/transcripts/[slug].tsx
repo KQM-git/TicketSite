@@ -59,6 +59,7 @@ interface Transcript {
   mentionedChannels: Channel[]
   mentionedRoles: Role[]
   queuedBy: string | null
+  contributors: string[] | null
 }
 interface Channel {
   discordId: string
@@ -176,7 +177,7 @@ ${significance}`
 
   const md = `### ${beautifiedChannel}
 
-**By:** ${nick}\\#${tag}  
+**By:** ${nick}\\#${tag}${transcript.contributors ? ", " + transcript.contributors.join(", ") : ""}  
 **Added:** ${date}  
 [Discussion](https://tickets.deeznuts.moe/transcripts/${slug})
 
@@ -434,6 +435,16 @@ export async function getStaticProps(context: GetStaticPropsContext): Promise<Ge
               }
             }
           }
+        },
+        ticket: {
+          select: {
+            contributors: {
+              select: {
+                username: true,
+                tag: true
+              }
+            }
+          }
         }
       }
     })
@@ -455,7 +466,8 @@ export async function getStaticProps(context: GetStaticPropsContext): Promise<Ge
           mentionedChannels: transcript.mentionedChannels,
           mentionedRoles: transcript.mentionedRoles,
           createdAt: transcript.createdAt.getTime(),
-          queuedBy: transcript.queuedTranscript?.transcriber?.username ?? null
+          queuedBy: transcript.queuedTranscript?.transcriber?.username ?? null,
+          contributors: transcript.ticket?.contributors.map(c => `${c.username}\\#${c.tag}`) ?? null
         }
       },
       revalidate: transcript.queuedTranscript ? 60 : 3600
