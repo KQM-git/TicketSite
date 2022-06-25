@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { DiscordMarkdown, DiscordReactions } from "@discord-message-components/react"
-import { Prisma, PrismaClient } from "@prisma/client"
+import { PrismaClient } from "@prisma/client"
 import Color from "color"
 import copy from "copy-to-clipboard"
 import { GetStaticPathsResult, GetStaticPropsContext, GetStaticPropsResult } from "next"
@@ -12,7 +12,7 @@ import Twemoji from "react-twemoji"
 import FormattedLink from "../../components/FormattedLink"
 import Main from "../../components/Main"
 import { AttachmentData, EmbedData, Message, MessageGroup, Reaction, Transcript } from "../../utils/types"
-import { fetchTranscript, parseTranscript, prisma } from "../../utils/utils"
+import { fetchTranscript, parseTranscript } from "../../utils/utils"
 import styles from "../style.module.css"
 
 interface Props {
@@ -33,7 +33,6 @@ export default function Experiment({ transcript, location }: Props & { location:
         msg: [msg],
         user: transcript.users.find(x => msg.userId == x.discordId) ?? {
           discordId: msg.discordId,
-          serverId: msg.serverId,
           avatar: null,
           bot: null,
           nickname: null,
