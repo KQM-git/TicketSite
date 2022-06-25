@@ -11,70 +11,12 @@ import ReactMarkdown from "react-markdown"
 import Twemoji from "react-twemoji"
 import FormattedLink from "../../components/FormattedLink"
 import Main from "../../components/Main"
-import { prisma } from "../../utils/utils"
+import { AttachmentData, EmbedData, Message, MessageGroup, Reaction, Transcript } from "../../utils/types"
+import { fetchTranscript, parseTranscript, prisma } from "../../utils/utils"
 import styles from "../style.module.css"
-
-interface Message {
-  discordId: string
-  createdAt: number
-  editedAt: number | null
-  attachments: Prisma.JsonValue[]
-  reactions: Prisma.JsonValue[]
-  embeds: Prisma.JsonValue[]
-  content: string
-  components: Prisma.JsonValue[]
-  stickers: Prisma.JsonValue[]
-  reply: string | null
-  userId: string
-  serverId: string
-  transcriptId: number
-}
-
-interface User {
-  discordId: string
-  serverId: string
-  roleColor: string | null
-  nickname: string | null
-  username: string | null
-  tag: string | null
-  avatar: string | null
-  bot: boolean | null
-  verified: boolean | null
-}
 
 interface Props {
   transcript: Transcript
-}
-interface Transcript {
-  createdAt: number
-  slug: string
-  server: {
-    name: string;
-    id: string;
-    icon: string | null;
-  }
-  channelName: string
-  messages: Message[]
-  users: User[]
-  mentionedChannels: Channel[]
-  mentionedRoles: Role[]
-  queuedBy: string | null
-  contributors: string[] | null
-}
-interface Channel {
-  discordId: string
-  name: string
-  type: string
-}
-interface Role {
-  discordId: string
-  name: string
-  roleColor: string | null
-}
-
-interface MessageGroup {
-  user: User,
-  msg: Message[]
 }
 
 export default function Experiment({ transcript, location }: Props & { location: string }) {
@@ -133,56 +75,7 @@ export default function Experiment({ transcript, location }: Props & { location:
 }
 
 function Evidence({ transcript }: {transcript: Transcript}) {
-  const { messages, users, slug } = transcript
-
-  let finding = "Finding: *Unknown*", evidence = "Evidence: *Unknown*", significance = "Significance: *Unknown*"
-  let nick = "Unknown", tag = "????"
-
-  for (const message of messages) {
-      const content = message.content
-      if (!content) continue
-
-      if (content.match(/\**(Finding|Theory|Bug|Theory\/Finding\/Bug)\**:\**/i)) {
-          finding = content
-          evidence = ""
-          significance = ""
-      } else if (content.match(/\**Evidence\**:\**/i)) {
-          evidence = content
-          significance = ""
-      } else if (content.match(/\**Significance\**:\**/i)) {
-          significance = content
-      } else
-          continue
-
-      const user = users.find(u => u.discordId == message.userId)
-      nick = user?.username ?? "Unknown"
-      tag = user?.tag ?? "????"
-  }
-
-  const date = new Date(transcript.createdAt).toISOString().split("T")[0]
-
-  const findings = `${finding}
-
-${evidence}
-
-${significance}`
-  .replace(/\**(Finding|Theory|Bug|Theory\/Finding\/Bug|Evidence|Significance)\**:\**\s*/gi, (_, a) => `**${a}:**  \n`)
-  .replace(/(https?:\/\/.*)(\s)/g, (_, url, w) => `[${getDomain(url)}](${url})${w}`)
-  .trim()
-
-  const beautifiedChannel = transcript.channelName
-    .replace(/-/g, " ")
-    .replace(/^./, (a) => a.toUpperCase())
-    .replace(/(^|\s)./g, (a) => ["a", "to", "the"].includes(a) ? a : a.toUpperCase())
-
-  const md = `### ${beautifiedChannel}
-
-**By:** ${nick}\\#${tag}${transcript.contributors ? ", " + transcript.contributors.join(", ") : ""}  
-**Added:** ${date}  
-[Discussion](https://tickets.deeznuts.moe/transcripts/${slug})
-
-${findings}
-`.trim()
+  const md = parseTranscript(transcript)
 
   const [expanded, setExpanded] = useState(false)
   return expanded ?
@@ -207,15 +100,6 @@ ${findings}
       }} className="bg-green-600 disabled:bg-gray-900 text-slate-50 disabled:text-slate-400 w-fit px-3 py-1 text-center rounded-lg mt-3 cursor-pointer float-right">Show evidence markdown</button>
 }
 
-function getDomain(str: string) {
-  const url = new URL(str)
-  if (["youtube.com", "youtu.be"].includes(url.hostname))
-      return "YouTube"
-  if (["i.imgur.com", "imgur.com"].includes(url.hostname))
-      return "Imgur"
-  return url.hostname
-}
-
 const dateFormatter = new Intl.DateTimeFormat(undefined, { month: "long", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit", weekday: "short" })
 function MessageGroup({ group, transcript }: { group: MessageGroup, transcript: Transcript }) {
   return <div className={`grid ${styles.gridAuto1} mt-2`} id={group.msg[0]?.discordId}>
@@ -238,29 +122,6 @@ function MessageGroup({ group, transcript }: { group: MessageGroup, transcript: 
   </div>
 }
 
-interface EmbedData {
-  title?: string
-  description?: string
-  color?: string
-  thumbnail?: AttachmentData
-  image?: AttachmentData
-}
-interface AttachmentData {
-  name?: string
-  url: string
-  size?: number
-  width?: string
-  height?: string
-  spoiler?: boolean
-}
-interface Reaction {
-  emoji: {
-    name?: string
-    id?: string
-    url?: string
-  }
-  count: number
-}
 function Message({ msg, transcript, }: { msg: Message, transcript: Transcript }) {
   return <div className="mb-1 w-full rounded-lg" id={msg.discordId}>
     <Formatter content={msg.content} transcript={transcript} />
@@ -386,91 +247,19 @@ function Formatter({ content, transcript }: { transcript: Transcript, content: s
 export async function getStaticProps(context: GetStaticPropsContext): Promise<GetStaticPropsResult<Props>> {
   try {
     const slug = context.params?.slug
-    if (typeof slug != "string")
+
+    const transcript = await fetchTranscript(slug)
+    if (!transcript)
       return {
         notFound: true,
-        revalidate: 24 * 60 * 60
+        revalidate: 300
       }
 
-    const transcript = await prisma.transcript.findUnique({
-      where: { slug },
-      include: {
-        messages: {
-          orderBy: {
-            discordId: "asc"
-          }
-        },
-        channel: {
-          select: {
-            name: true
-          }
-        },
-        users: true,
-        server: {
-          select: {
-            name: true,
-            id: true,
-            icon: true
-          }
-        },
-        mentionedChannels: {
-          select: {
-            discordId: true,
-            name: true,
-            type: true
-          }
-        },
-        mentionedRoles: {
-          select: {
-            discordId: true,
-            name: true,
-            roleColor: true
-          }
-        },
-        queuedTranscript: {
-          select: {
-            transcriber: {
-              select: {
-                username: true
-              }
-            }
-          }
-        },
-        ticket: {
-          select: {
-            contributors: {
-              select: {
-                username: true,
-                tag: true
-              }
-            }
-          }
-        }
-      }
-    })
-
-    if (!transcript) {
-      return {
-        notFound: true,
-        revalidate: 5 * 60
-      }
-    }
     return {
       props: {
-        transcript: {
-          slug: transcript.slug,
-          channelName: transcript.channel.name,
-          users: transcript.users,
-          server: transcript.server,
-          messages: transcript.messages.map(m => ({ ...m, createdAt: m.createdAt.getTime(), editedAt: m.editedAt?.getTime() ?? null })),
-          mentionedChannels: transcript.mentionedChannels,
-          mentionedRoles: transcript.mentionedRoles,
-          createdAt: transcript.createdAt.getTime(),
-          queuedBy: transcript.queuedTranscript?.transcriber?.username ?? null,
-          contributors: transcript.ticket?.contributors.map(c => `${c.username}\\#${c.tag}`) ?? null
-        }
+        transcript
       },
-      revalidate: transcript.queuedTranscript ? 60 : 3600
+      revalidate: transcript.queuedBy ? 60 : 3600
     }
   } catch (error) {
     return {
