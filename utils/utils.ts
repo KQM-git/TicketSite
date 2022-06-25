@@ -48,8 +48,9 @@ export function parseTranscript(transcript: Transcript) {
   ${evidence}
   
   ${significance}`
+        .replace(/ *\n/g, "  \n")
         .replace(/\**(Finding|Theory|Bug|Theory\/Finding\/Bug|Evidence|Significance)\**:\**\s*/gi, (_, a) => `**${a}:**  \n`)
-        .replace(/(https?:\/\/.*)(\s)/g, (_, url, w) => `[${getDomain(url)}](${url})${w}`)
+        .replace(/<?(https?:\/\/\S*?)>?(\s)/g, (_, url, w) => `[${getDomain(url)}](${url})${w}`)
         .trim()
 
     const beautifiedChannel = transcript.channelName
@@ -59,7 +60,7 @@ export function parseTranscript(transcript: Transcript) {
 
     return `### ${beautifiedChannel}
   
-**By:** ${nick}\\#${tag}${transcript.contributors ? ", " + transcript.contributors.join(", ") : ""}  
+**By:** ${nick}\\#${tag}${(transcript.contributors ?? []).length > 0 ? ", " + transcript.contributors!.join(", ") : ""}  
 **Added:** ${date}  
 [Discussion](https://tickets.deeznuts.moe/transcripts/${slug})
 
