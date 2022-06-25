@@ -11,8 +11,9 @@ import ReactMarkdown from "react-markdown"
 import Twemoji from "react-twemoji"
 import FormattedLink from "../../components/FormattedLink"
 import Main from "../../components/Main"
+import { fetchTranscript } from "../../utils/db"
 import { AttachmentData, EmbedData, Message, MessageGroup, Reaction, Transcript } from "../../utils/types"
-import { fetchTranscript, parseTranscript } from "../../utils/utils"
+import { parseTranscript } from "../../utils/utils"
 import styles from "../style.module.css"
 
 interface Props {

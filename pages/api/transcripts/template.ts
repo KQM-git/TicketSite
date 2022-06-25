@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next"
-import { fetchTranscript, parseTranscript } from "../../../utils/utils"
+import { fetchTranscript } from "../../../utils/db"
+import { parseTranscript } from "../../../utils/utils"
 
 export default async function api(req: NextApiRequest, res: NextApiResponse) {
     if (req.method !== "GET") return res.redirect("/")
