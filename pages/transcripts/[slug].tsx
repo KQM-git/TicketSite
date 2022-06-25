@@ -12,8 +12,8 @@ import Twemoji from "react-twemoji"
 import FormattedLink from "../../components/FormattedLink"
 import Main from "../../components/Main"
 import { fetchTranscript } from "../../utils/db"
-import { AttachmentData, EmbedData, Message, MessageGroup, Reaction, Transcript } from "../../utils/types"
-import { parseTranscript } from "../../utils/utils"
+import { AttachmentData, EmbedData, Message, MessageGroup, Reaction, Transcript, User } from "../../utils/types"
+import { getUser, parseTranscript } from "../../utils/utils"
 import styles from "../style.module.css"
 
 interface Props {
@@ -32,16 +32,7 @@ export default function Experiment({ transcript, location }: Props & { location:
     } else {
       messageGroups.push({
         msg: [msg],
-        user: transcript.users.find(x => msg.userId == x.discordId) ?? {
-          discordId: msg.discordId,
-          avatar: null,
-          bot: null,
-          nickname: null,
-          roleColor: null,
-          tag: null,
-          username: null,
-          verified: null
-        }
+        user: getUser(msg.userId, transcript)
       })
     }
   }
@@ -106,14 +97,12 @@ function MessageGroup({ group, transcript }: { group: MessageGroup, transcript: 
     <div>
       {group.msg[0]?.reply && <div className="h-4" />}
       <div className="w-11 h-11 mt-2">
-        <img src={(group.user.avatar && `https://cdn.discordapp.com/avatars/${group.user.discordId}/${group.user.avatar}.png`) ?? "https://cdn.discordapp.com/attachments/247122362942619649/980958465566572604/unknown.png"} className="w-11 h-11 rounded-full" loading="lazy" alt="Avatar" />
+        <Avatar user={group.user} size="11" />
       </div>
     </div>
     <div className="ml-5 w-max-full pr-4">
       {group.msg[0]?.reply && <Reply replyId={group.msg[0].reply} transcript={transcript} />}
-      <span className="font-semibold" title={`${group.user.username ?? "???"}#${group.user.tag}`} style={({
-        color: group.user.roleColor == "#000000" ? undefined : group.user.roleColor ?? undefined
-      })}>{group.user.nickname ?? group.user.username}</span>
+      <Username user={group.user} />
       <span className="text-sm text-slate-700 dark:text-slate-400 ml-2">{dateFormatter.format(group.msg[0].createdAt)}</span>
       <div>
         {group.msg.map((msg, j) => <Message key={j} msg={msg} transcript={transcript} />)}
@@ -231,8 +220,15 @@ function Reply({ replyId, transcript }: { replyId: string, transcript: Transcrip
     return <div>
       <a className="text-xs" href={`#${replyId}`}>Reply to an unknown message</a>
     </div>
+
+  const user = getUser(msg.userId, transcript)
   return <div className="overflow-hidden h-4 text-xs">
-    <a href={`#${replyId}`} >Reply to <Formatter transcript={transcript} content={msg.content.split(/\n/)[0]} /></a>
+    <a href={`#${replyId}`} >
+      Reply to{" "}
+      <Avatar user={user} size="4" />{" "}
+      <Username user={user} />{": "}
+      <Formatter transcript={transcript} content={msg.content.split(/\n/)[0]} />
+    </a>
   </div>
 }
 
@@ -281,6 +277,20 @@ function Formatter({ content, transcript }: { transcript: Transcript, content: s
   </Twemoji>
 }
 
+function Avatar({ user, size }: { user: User, size: string }) {
+  return <img
+    src={(user.avatar && `https://cdn.discordapp.com/avatars/${user.discordId}/${user.avatar}.png`) ?? "https://cdn.discordapp.com/attachments/247122362942619649/980958465566572604/unknown.png"}
+    className={`w-${size} h-${size} inline-block rounded-full`}
+    loading="lazy"
+    alt="Avatar"
+  />
+}
+
+function Username({ user }: {user: User}) {
+  return <span className="font-semibold" title={`${user.username ?? "???"}#${user.tag}`} style={({
+    color: user.roleColor == "#000000" ? undefined : user.roleColor ?? undefined
+  })}>{user.nickname ?? user.username}</span>
+}
 
 export async function getStaticProps(context: GetStaticPropsContext): Promise<GetStaticPropsResult<Props>> {
   try {

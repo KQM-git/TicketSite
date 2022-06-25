@@ -76,3 +76,17 @@ function getDomain(str: string) {
         return "Imgur"
     return url.hostname
 }
+
+
+export function getUser(id: string, transcript: Transcript) {
+    return transcript.users.find(x => id == x.discordId) ?? {
+        discordId: id,
+        avatar: null,
+        bot: null,
+        nickname: null,
+        roleColor: null,
+        tag: null,
+        username: null,
+        verified: null
+    }
+}
