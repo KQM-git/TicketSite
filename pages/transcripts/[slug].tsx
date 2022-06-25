@@ -176,12 +176,27 @@ function Embed({ e, transcript }: { e: EmbedData, transcript: Transcript }) {
   return <div className={`grid ${styles.gridAuto1} max-w-xl`}>
     <div className="w-1 rounded-l" style={({ backgroundColor: (e.color ?? "#2F3136") })} />
     <div className="flex flex-col p-2 rounded-r bg-slate-200 dark:bg-slate-800 dark:bg-opacity-75 bg-opacity-75">
-      {e.title && <div className="font-bold">{e.title}</div>}
+      {e.title && e.url ?
+        <FormattedLink className="font-bold" target="_blank" href={e.url}>{e.title}</FormattedLink>
+      :
+        <div className="font-bold">{e.title}</div>
+      }
       {e.description &&
         <div className="text-sm">
           <Formatter content={e.description} transcript={transcript} />
         </div>}
       {e.image && <div className="mt-2"><Attachment a={e.image} /></div>}
+      {e.video && <div className="mt-2"><div className="flex max-w-xl my-1">
+      <iframe
+        src={e.video.url.replace("https://www.youtube.com/embed/", "https://www.youtube-nocookie.com/embed/")}
+        width="560"
+        height="315"
+        title="Video player"
+        frameBorder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+      />
+    </div></div>}
     </div>
   </div>
 }

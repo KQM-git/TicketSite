@@ -60,10 +60,12 @@ export interface MessageGroup {
 
 export interface EmbedData {
     title?: string
+    url?: string
     description?: string
     color?: string
     thumbnail?: AttachmentData
     image?: AttachmentData
+    video?: AttachmentData
 }
 export interface AttachmentData {
     name?: string
