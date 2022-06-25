@@ -74,30 +74,30 @@ export default function Experiment({ transcript, location }: Props & { location:
   )
 }
 
-function Evidence({ transcript }: {transcript: Transcript}) {
+function Evidence({ transcript }: { transcript: Transcript }) {
   const md = parseTranscript(transcript)
 
   const [expanded, setExpanded] = useState(false)
   return expanded ?
-      <div className="dark:bg-slate-600 bg-slate-200 rounded-xl my-2 p-2">
-        <button onClick={() => {
-          copy(md, {
-            format: "text/plain"
-          })
-        }} className="bg-blue-600 disabled:bg-gray-900 text-slate-50 disabled:text-slate-400 w-fit px-3 py-1 text-center rounded-lg mr-2 cursor-pointer float-right">Copy evidence markdown template to clipboard</button>
-        <button onClick={() => {
-          setExpanded(false)
-        }} className="bg-red-600 disabled:bg-gray-900 text-slate-50 disabled:text-slate-400 w-fit px-3 py-1 text-center rounded-lg mr-2 cursor-pointer float-right">Close evidence markdown</button>
-
-        <ReactMarkdown>{md}</ReactMarkdown>
-        <hr className="opacity-80"/>
-        <textarea value={md} className="dark:bg-slate-500 bg-slate-300 w-full my-2 h-72" />
-        <div className="clear-both"></div>
-      </div>
-         :
+    <div className="dark:bg-slate-600 bg-slate-200 rounded-xl my-2 p-2">
       <button onClick={() => {
-        setExpanded(true)
-      }} className="bg-green-600 disabled:bg-gray-900 text-slate-50 disabled:text-slate-400 w-fit px-3 py-1 text-center rounded-lg mt-3 cursor-pointer float-right">Show evidence markdown</button>
+        copy(md, {
+          format: "text/plain"
+        })
+      }} className="bg-blue-600 disabled:bg-gray-900 text-slate-50 disabled:text-slate-400 w-fit px-3 py-1 text-center rounded-lg mr-2 cursor-pointer float-right">Copy evidence markdown template to clipboard</button>
+      <button onClick={() => {
+        setExpanded(false)
+      }} className="bg-red-600 disabled:bg-gray-900 text-slate-50 disabled:text-slate-400 w-fit px-3 py-1 text-center rounded-lg mr-2 cursor-pointer float-right">Close evidence markdown</button>
+
+      <ReactMarkdown>{md}</ReactMarkdown>
+      <hr className="opacity-80" />
+      <textarea value={md} className="dark:bg-slate-500 bg-slate-300 w-full my-2 h-72" />
+      <div className="clear-both"></div>
+    </div>
+    :
+    <button onClick={() => {
+      setExpanded(true)
+    }} className="bg-green-600 disabled:bg-gray-900 text-slate-50 disabled:text-slate-400 w-fit px-3 py-1 text-center rounded-lg mt-3 cursor-pointer float-right">Show evidence markdown</button>
 }
 
 const dateFormatter = new Intl.DateTimeFormat(undefined, { month: "long", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit", weekday: "short" })
@@ -126,34 +126,57 @@ function Message({ msg, transcript, }: { msg: Message, transcript: Transcript })
   return <div className="mb-1 w-full rounded-lg" id={msg.discordId}>
     <Formatter content={msg.content} transcript={transcript} />
     {msg.embeds?.length > 0 && <div>{msg.embeds.map((e, i) => <Embed key={i} e={e as EmbedData} transcript={transcript} />)}</div>}
-    {msg.attachments?.length > 0 && <div>{msg.attachments.map((a, i) => <Attachment key={i} a={a as unknown as AttachmentData}/>)}</div>}
+    {msg.attachments?.length > 0 && <div>{msg.attachments.map((a, i) => <Attachment key={i} a={a as unknown as AttachmentData} />)}</div>}
     {msg.reactions?.length > 0 && <DiscordReactions>
-        {msg.reactions.map(a => a as unknown as Reaction).map((r, i) => <div key={i} className="discord-reaction" title={r.emoji?.name ?? "unknown"}>
-            {r.emoji.url ? <img src={r.emoji.url} alt={r.emoji.name} className="d-emoji" loading="lazy" /> : <Twemoji noWrapper={true} options={{
-                className: "d-emoji"
-              }}>
-                <span>{r.emoji.name}</span>
-            </Twemoji>}
-            <span className="discord-reaction-count">{r.count}</span>
-          </div>)}
-      </DiscordReactions>}
+      {msg.reactions.map(a => a as unknown as Reaction).map((r, i) => <div key={i} className="discord-reaction" title={r.emoji?.name ?? "unknown"}>
+        {r.emoji.url ? <img src={r.emoji.url} alt={r.emoji.name} className="d-emoji" loading="lazy" /> : <Twemoji noWrapper={true} options={{
+          className: "d-emoji"
+        }}>
+          <span>{r.emoji.name}</span>
+        </Twemoji>}
+        <span className="discord-reaction-count">{r.count}</span>
+      </div>)}
+    </DiscordReactions>}
   </div>
 }
 
 function Attachment({ a }: { a: AttachmentData }) {
   const url = new URL(a.url)
+  let width, height
+  if (a.width && a.height) {
+    const w = +a.width, h = +a.height
+    const MAX = 576
+    if (w >= h && w > MAX) {
+      width = 576
+      height = h / w * 576
+    }
+
+    if (h >= w && h > MAX) {
+      height = 576
+      width = w / h * 576
+    }
+  }
+
   if ([".png", ".jpg", ".jpeg", ".gif", ".webp"].some(x => url.pathname.toLowerCase().endsWith(x)))
-    return <div className={`flex max-w-xl ${a.spoiler ? "blur-xl hover:blur-0" : ""} my-1`}>
-      <img src={a.url} width={a.width} height={a.height} alt={a.name} loading="lazy" />
+    return <div
+      className={`flex max-w-xl ${a.spoiler ? "blur-xl hover:blur-0" : ""} my-1`}
+      style={({ width, height })}
+    >
+      <FormattedLink href={a.url} target="_blank">
+        <img src={a.url} width={a.width} height={a.height} alt={a.name} loading="lazy" />
+      </FormattedLink>
     </div>
 
   if ([".mp4", ".mov", ".webm", ".avi", ".flv"].some(x => url.pathname.toLowerCase().endsWith(x)))
-    return <div className={`flex max-w-xl ${a.spoiler ? "blur-xl hover:blur-0" : ""} my-1`}>
+    return <div
+      className={`flex max-w-xl ${a.spoiler ? "blur-xl hover:blur-0" : ""} my-1`}
+      style={({ width, height })}
+    >
       <video src={a.url} width={a.width} height={a.height} title={a.name} controls />
     </div>
 
   return <div className={`flex items-center max-w-xl ${a.spoiler ? "blur-xl hover:blur-0" : ""} my-1 bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-900 rounded-lg`}>
-    <img src="/img/attachment.png" alt="Attachment" width={72} height={96} className="h-10 m-2 ml-3 w-auto"/>
+    <img src="/img/attachment.png" alt="Attachment" width={72} height={96} className="h-10 m-2 ml-3 w-auto" />
     <div className="m-1">
       <FormattedLink href={a.url} target="_blank">Attachment: {a.name}</FormattedLink>
       <div className="opacity-80">({a.size ? size(a.size) : "?"})</div>
@@ -163,10 +186,10 @@ function Attachment({ a }: { a: AttachmentData }) {
 
 function size(a: number) {
   if (a < 1024) return `${a}B`
-  if (a < 100 * 1024) return `${(a/1024).toFixed(2)}KB`
-  if (a < 1024 * 1024) return `${(a/1024).toFixed(1)}KB`
-  if (a < 100 * 1024 * 1024) return `${(a/1024/1024).toFixed(2)}MB`
-  return `${(a/1024/1024).toFixed(1)}MB`
+  if (a < 100 * 1024) return `${(a / 1024).toFixed(2)}KB`
+  if (a < 1024 * 1024) return `${(a / 1024).toFixed(1)}KB`
+  if (a < 100 * 1024 * 1024) return `${(a / 1024 / 1024).toFixed(2)}MB`
+  return `${(a / 1024 / 1024).toFixed(1)}MB`
 }
 
 function Embed({ e, transcript }: { e: EmbedData, transcript: Transcript }) {
@@ -178,7 +201,7 @@ function Embed({ e, transcript }: { e: EmbedData, transcript: Transcript }) {
     <div className="flex flex-col p-2 rounded-r bg-slate-200 dark:bg-slate-800 dark:bg-opacity-75 bg-opacity-75">
       {e.title && e.url ?
         <FormattedLink className="font-bold" target="_blank" href={e.url}>{e.title}</FormattedLink>
-      :
+        :
         <div className="font-bold">{e.title}</div>
       }
       {e.description &&
@@ -187,33 +210,33 @@ function Embed({ e, transcript }: { e: EmbedData, transcript: Transcript }) {
         </div>}
       {e.image && <div className="mt-2"><Attachment a={e.image} /></div>}
       {e.video && <div className="mt-2"><div className="flex max-w-xl my-1">
-      <iframe
-        src={e.video.url.replace("https://www.youtube.com/embed/", "https://www.youtube-nocookie.com/embed/")}
-        width="560"
-        height="315"
-        title="Video player"
-        frameBorder="0"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen
-      />
-    </div></div>}
+        <iframe
+          src={e.video.url.replace("https://www.youtube.com/embed/", "https://www.youtube-nocookie.com/embed/")}
+          width="560"
+          height="315"
+          title="Video player"
+          frameBorder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      </div></div>}
     </div>
   </div>
 }
 
 
-function Reply({ replyId, transcript } : { replyId: string, transcript: Transcript }) {
+function Reply({ replyId, transcript }: { replyId: string, transcript: Transcript }) {
   const msg = transcript.messages.find(u => u.discordId == replyId)
   if (!msg)
     return <div>
       <a className="text-xs" href={`#${replyId}`}>Reply to an unknown message</a>
     </div>
   return <div className="overflow-hidden h-4 text-xs">
-    <a href={`#${replyId}`} >Reply to <Formatter transcript={transcript} content={msg.content.split(/\n/)[0]}/></a>
+    <a href={`#${replyId}`} >Reply to <Formatter transcript={transcript} content={msg.content.split(/\n/)[0]} /></a>
   </div>
 }
 
-function Formatter({ content, transcript }: { transcript: Transcript, content: string}) {
+function Formatter({ content, transcript }: { transcript: Transcript, content: string }) {
   const any = /^(.*?)<(#|@&|@!?)(\d{17,19})>/
 
   const elements: JSX.Element[] = []
