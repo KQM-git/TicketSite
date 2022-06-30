@@ -11,7 +11,7 @@ export default async function api(req: NextApiRequest, res: NextApiResponse) {
     if (!transcript)
         return res.status(404).json({ error: "Not found" })
 
-    const md = parseTranscript(transcript)
+    const md = parseTranscript(transcript, true)
 
     return res.json({
         md,
