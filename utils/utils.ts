@@ -14,9 +14,10 @@ export function clean(input: string) {
     return input.replace(/ ?\$\{.*?\}/g, "").replace(/ ?\(.*?\)/g, "").replace(/[*[\]]/g, "").split("\n")[0]
 }
 
-export function parseTranscript(transcript: Transcript) {
-    const { messages, users, slug } = transcript
+export function parseTranscript(transcript: Transcript, all: boolean) {
+    const { messages, users, slug, contributors } = transcript
 
+    const contributorList = contributors ?? []
     let finding = "Finding: *Unknown*", evidence = "Evidence: *Unknown*", significance = "Significance: *Unknown*"
     let nick = "Unknown", tag = "????"
 
@@ -24,14 +25,20 @@ export function parseTranscript(transcript: Transcript) {
         const content = message.content
         if (!content) continue
 
-        if (content.match(/\**(Finding|Theory|Bug|Theory\/Finding\/Bug)\**:\**/i)) {
+        if (all && content.match(/\S*(Finding|Theory|Bug|Theory\/Finding\/Bug|Evidence|Significance)\S*:\S*/i)) {
+            if (evidence != "") finding = ""
+
+            finding = finding + "\n\n" + content
+            evidence = ""
+            significance = ""
+        } else if (content.match(/\S*(Finding|Theory|Bug|Theory\/Finding\/Bug)\S*:\S*/i)) {
             finding = content
             evidence = ""
             significance = ""
-        } else if (content.match(/\**Evidence\**:\**/i)) {
+        } else if (content.match(/\S*Evidence\S*:\S*/i)) {
             evidence = content
             significance = ""
-        } else if (content.match(/\**Significance\**:\**/i)) {
+        } else if (content.match(/\S*Significance\S*:\S*/i)) {
             significance = content
         } else
             continue
@@ -41,17 +48,20 @@ export function parseTranscript(transcript: Transcript) {
         tag = user?.tag ?? "????"
     }
 
+    if (!contributorList.includes(`${nick}\\#${tag}`))
+        contributorList.unshift(`${nick}\\#${tag}`)
+
     const date = new Date(transcript.createdAt).toISOString().split("T")[0]
 
     const findings = `${finding}
   
-  ${evidence}
-  
-  ${significance}`
-        .replace(/ *\n/g, "  \n")
-        .replace(/\**(Finding|Theory|Bug|Theory\/Finding\/Bug|Evidence|Significance)\**:\**\s*/gi, (_, a) => `**${a}:**  \n`)
-        .replace(/<?(https?:\/\/\S*?)>?(\s)/g, (_, url, w) => `[${getDomain(url)}](${url})${w}`)
-        .trim()
+${evidence}
+
+${significance}`
+    .replace(/ *\n/g, "  \n")
+    .replace(/\S*(Finding|Theory|Bug|Theory\/Finding\/Bug|Evidence|Significance)\S*:\S*\s*/gi, (_, a) => `**${a}:**  \n`)
+    .replace(/<?(https?:\/\/\S*?)>?(\s)/g, (_, url, w) => `[${getDomain(url)}](${url})${w}`)
+    .trim()
 
     const beautifiedChannel = transcript.channelName
         .replace(/-/g, " ")
@@ -60,7 +70,7 @@ export function parseTranscript(transcript: Transcript) {
 
     return `### ${beautifiedChannel}
   
-**By:** ${nick}\\#${tag}${(transcript.contributors ?? []).length > 0 ? ", " + transcript.contributors!.join(", ") : ""}  
+**By:** ${contributorList.join(", ")}  
 **Added:** ${date}  
 [Discussion](https://tickets.deeznuts.moe/transcripts/${slug})
 

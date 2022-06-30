@@ -66,9 +66,10 @@ export default function Experiment({ transcript, location }: Props & { location:
 }
 
 function Evidence({ transcript }: { transcript: Transcript }) {
-  const md = parseTranscript(transcript)
-
   const [expanded, setExpanded] = useState(false)
+  const [all, setAllFindings] = useState(false)
+
+  const md = parseTranscript(transcript, all)
   return expanded ?
     <div className="dark:bg-slate-600 bg-slate-200 rounded-xl my-2 p-2">
       <button onClick={() => {
@@ -80,9 +81,13 @@ function Evidence({ transcript }: { transcript: Transcript }) {
         setExpanded(false)
       }} className="bg-red-600 disabled:bg-gray-900 text-slate-50 disabled:text-slate-400 w-fit px-3 py-1 text-center rounded-lg mr-2 cursor-pointer float-right">Close evidence markdown</button>
 
+
       <ReactMarkdown>{md}</ReactMarkdown>
       <hr className="opacity-80" />
       <textarea value={md} className="dark:bg-slate-500 bg-slate-300 w-full my-2 h-72" />
+      <button onClick={() => {
+        setAllFindings(!all)
+      }} className={`${all ? "bg-red-600" : "bg-green-600"} disabled:bg-gray-900 text-slate-50 disabled:text-slate-400 w-fit px-3 py-1 text-center rounded-lg mr-2 cursor-pointer float-right`}>{all ? "Show latest finding" : "Show all findings"}</button>
       <div className="clear-both"></div>
     </div>
     :
