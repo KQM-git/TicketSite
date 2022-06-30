@@ -203,7 +203,7 @@ function Embed({ e, transcript }: { e: EmbedData, transcript: Transcript }) {
           <Formatter content={e.description} transcript={transcript} />
         </div>}
       {e.image && <div className="mt-2"><Attachment a={e.image} /></div>}
-      {e.video && <div className="mt-2"><div className="flex max-w-xl my-1">
+      {e.video && (e.video.url.endsWith(".mp4") ? <Attachment a={e.video} /> : <div className="mt-2"><div className="flex max-w-xl my-1">
         <iframe
           src={e.video.url.replace("https://www.youtube.com/embed/", "https://www.youtube-nocookie.com/embed/")}
           width="560"
@@ -213,7 +213,7 @@ function Embed({ e, transcript }: { e: EmbedData, transcript: Transcript }) {
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
         />
-      </div></div>}
+      </div></div>)}
     </div>
   </div>
 }
