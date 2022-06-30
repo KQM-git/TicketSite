@@ -54,7 +54,7 @@ export function parseTranscript(transcript: Transcript, all: boolean) {
     const date = new Date(transcript.createdAt).toISOString().split("T")[0]
 
     const findings = `${finding}
-  
+
 ${evidence}
 
 ${significance}`
@@ -69,7 +69,7 @@ ${significance}`
         .replace(/(^|\s)./g, (a) => ["a", "to", "the"].includes(a) ? a : a.toUpperCase())
 
     return `### ${beautifiedChannel}
-  
+
 **By:** ${contributorList.join(", ")}  
 **Added:** ${date}  
 [Discussion](https://tickets.deeznuts.moe/transcripts/${slug})
