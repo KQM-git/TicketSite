@@ -3,6 +3,30 @@ import { Transcript, Message } from "./types"
 
 export const prisma = new PrismaClient()
 
+const messageSelector = {
+    id: true,
+    discordId: true,
+    createdAt: true,
+    editedAt: true,
+    attachments: true,
+    reactions: true,
+    embeds: true,
+    content: true,
+    components: true,
+    reply: true,
+    stickers: true,
+    userId: true,
+}
+const userSelector = {
+    discordId: true,
+    roleColor: true,
+    nickname: true,
+    username: true,
+    tag: true,
+    avatar: true,
+    bot: true,
+    verified: true
+}
 export async function fetchTranscript(slug: string | string[] | undefined | null): Promise<Transcript | null> {
     if (typeof slug != "string")
         return null
@@ -15,41 +39,9 @@ export async function fetchTranscript(slug: string | string[] | undefined | null
                     messages: true
                 }
             },
-            messages: {
-                select: {
-                    id: true,
-                    discordId: true,
-                    createdAt: true,
-                    editedAt: true,
-                    attachments: true,
-                    reactions: true,
-                    embeds: true,
-                    content: true,
-                    components: true,
-                    reply: true,
-                    stickers: true,
-                    userId: true,
-                },
-                orderBy: {
-                    id: "desc"
-                },
-                take: 250
-            },
             channel: {
                 select: {
                     name: true
-                }
-            },
-            users: {
-                select: {
-                    discordId: true,
-                    roleColor: true,
-                    nickname: true,
-                    username: true,
-                    tag: true,
-                    avatar: true,
-                    bot: true,
-                    verified: true
                 }
             },
             server: {
@@ -98,12 +90,35 @@ export async function fetchTranscript(slug: string | string[] | undefined | null
     if (!fetched)
         return null
 
+    const messages = await prisma.message.findMany({
+        where: {
+            transcriptId: fetched.id
+        },
+        select: messageSelector,
+        orderBy: {
+            id: "desc"
+        },
+        take: 250
+    })
+
+    const users = await prisma.user.findMany({
+        where: {
+            transcripts: {
+                some: {
+                    id: fetched.id
+                }
+            }
+        },
+        select: userSelector
+    })
+
+
     return {
         slug: fetched.slug,
         channelName: fetched.channel.name,
-        users: fetched.users,
+        users: users,
         server: fetched.server,
-        messages: fetched.messages.map(m => ({ ...m, createdAt: m.createdAt.getTime(), editedAt: m.editedAt?.getTime() ?? null })),
+        messages: messages.map(m => ({ ...m, createdAt: m.createdAt.getTime(), editedAt: m.editedAt?.getTime() ?? null })),
         messageCount: fetched._count.messages,
         mentionedChannels: fetched.mentionedChannels,
         mentionedRoles: fetched.mentionedRoles,
@@ -114,44 +129,36 @@ export async function fetchTranscript(slug: string | string[] | undefined | null
 }
 
 export async function fetchMore(slug: string, offset: number): Promise<{messages: Message[], isDone: boolean } | null> {
-    const fetched = await prisma.transcript.findUnique({
+
+
+    const transcript = await prisma.transcript.findUnique({
         where: { slug: slug },
-        include: {
-            queuedTranscript: {
-                select: { id: true }
-            },
-            messages: {
-                select: {
-                    id: true,
-                    discordId: true,
-                    createdAt: true,
-                    editedAt: true,
-                    attachments: true,
-                    reactions: true,
-                    embeds: true,
-                    content: true,
-                    components: true,
-                    reply: true,
-                    stickers: true,
-                    userId: true,
-                },
-                orderBy: {
-                    id: "desc"
-                },
-                cursor: {
-                    id: offset
-                },
-                skip: 1,
-                take: 100
-            }
-        }
+        select: { id: true, queuedTranscript: { select: { id: true } } }
     })
 
-    if (!fetched || fetched.messages.length == 0)
+    if (!transcript)
+        return null
+
+    const messages = await prisma.message.findMany({
+        where: {
+            transcriptId: transcript.id
+        },
+        select: messageSelector,
+        orderBy: {
+            id: "desc"
+        },
+        cursor: {
+            id: offset
+        },
+        skip: 1,
+        take: 100
+    })
+
+    if (!messages || messages.length == 0)
         return null
 
     return {
-        messages: fetched.messages.map(m => ({ ...m, createdAt: m.createdAt.getTime(), editedAt: m.editedAt?.getTime() ?? null })),
-        isDone: fetched.queuedTranscript == null
+        messages: messages.map(m => ({ ...m, createdAt: m.createdAt.getTime(), editedAt: m.editedAt?.getTime() ?? null })),
+        isDone: transcript.queuedTranscript == null
     }
 }
