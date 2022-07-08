@@ -34,11 +34,6 @@ export async function fetchTranscript(slug: string | string[] | undefined | null
     const fetched = await prisma.transcript.findUnique({
         where: { slug },
         include: {
-            _count: {
-                select: {
-                    messages: true
-                }
-            },
             channel: {
                 select: {
                     name: true
@@ -90,6 +85,12 @@ export async function fetchTranscript(slug: string | string[] | undefined | null
     if (!fetched)
         return null
 
+    const count = await prisma.message.count({
+        where: {
+            transcriptId: fetched.id
+        }
+    })
+
     const messages = await prisma.message.findMany({
         where: {
             transcriptId: fetched.id
@@ -119,7 +120,7 @@ export async function fetchTranscript(slug: string | string[] | undefined | null
         users: users,
         server: fetched.server,
         messages: messages.map(m => ({ ...m, createdAt: m.createdAt.getTime(), editedAt: m.editedAt?.getTime() ?? null })),
-        messageCount: fetched._count.messages,
+        messageCount: count,
         mentionedChannels: fetched.mentionedChannels,
         mentionedRoles: fetched.mentionedRoles,
         createdAt: fetched.createdAt.getTime(),
