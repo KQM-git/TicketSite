@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client"
 
 export interface Message {
+    id: number
     discordId: string
     createdAt: number
     editedAt: number | null
@@ -33,6 +34,7 @@ export interface Transcript {
         id: string;
         icon: string | null;
     }
+    messageCount: number
     channelName: string
     messages: Message[]
     users: User[]

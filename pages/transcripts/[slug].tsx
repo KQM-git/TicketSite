@@ -6,7 +6,8 @@ import Color from "color"
 import copy from "copy-to-clipboard"
 import { GetStaticPathsResult, GetStaticPropsContext, GetStaticPropsResult } from "next"
 import Head from "next/head"
-import { useState } from "react"
+import { Dispatch, SetStateAction, useState } from "react"
+import InfiniteScroll from "react-infinite-scroll-component"
 import ReactMarkdown from "react-markdown"
 import Twemoji from "react-twemoji"
 import FormattedLink from "../../components/FormattedLink"
@@ -21,11 +22,14 @@ interface Props {
 }
 
 export default function Experiment({ transcript, location }: Props & { location: string }) {
-  const desc = `Transcript for ${transcript.channelName} (${transcript.messages.length} messages).`
+  const desc = `Transcript for ${transcript.channelName} (${transcript.messageCount} messages).`
 
   const messageGroups: MessageGroup[] = []
 
-  for (const msg of transcript.messages) {
+  const [messages, setMessages] = useState(transcript.messages)
+  const [hasMore, setHasMore] = useState(messages.length < transcript.messageCount)
+
+  for (const msg of messages) {
     const prev = messageGroups[messageGroups.length - 1]
     if (msg.userId == prev?.user.discordId && !msg.reply) {
       prev.msg.push(msg)
@@ -36,7 +40,6 @@ export default function Experiment({ transcript, location }: Props & { location:
       })
     }
   }
-
 
   return (
     <Main>
@@ -55,14 +58,30 @@ export default function Experiment({ transcript, location }: Props & { location:
         <div className="text-xl font-semibold">
           <div>{transcript.server.name}</div>
           <div>{transcript.channelName}</div>
-          <div>{transcript.messages.length} messages {transcript.queuedBy ? "fetched so far" : ""}</div>
+          <div>{Math.max(transcript.messageCount, messages.length)} messages {transcript.queuedBy ? "fetched so far" : ""}</div>
         </div>
       </div>
-
-      {messageGroups.map((group, i) => <MessageGroup key={i} group={group} transcript={transcript} />)}
+      <InfiniteScroll
+        dataLength={messages.length}
+        next={() => fetchData(transcript.slug, messages[messages.length-1].id, setHasMore, messages, setMessages)}
+        hasMore={hasMore}
+        loader={<h4>Loading...</h4>}
+      >
+        {messageGroups.map((group, i) => <MessageGroup key={i} group={group} transcript={transcript} />)}
+      </InfiniteScroll>
 
     </Main>
   )
+}
+
+async function fetchData(slug: string, offset: number, setHasMore: Dispatch<SetStateAction<boolean>>, messages: Message[], setMessages: Dispatch<SetStateAction<Message[]>>) {
+  const msg = await fetch(`/api/transcripts/fetchMore?slug=${slug}&offset=${offset}`)
+  if (msg.status == 404) {
+    setHasMore(false)
+    return
+  }
+
+  setMessages(messages.concat(await msg.json() as Message[]))
 }
 
 function Evidence({ transcript }: { transcript: Transcript }) {
