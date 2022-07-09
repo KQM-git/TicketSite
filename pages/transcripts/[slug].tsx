@@ -176,7 +176,7 @@ function Attachment({ a }: { a: AttachmentData }) {
       style={({ width, height })}
     >
       <FormattedLink href={a.url} target="_blank">
-        <img src={a.url} width={a.width} height={a.height} alt={a.name} loading="lazy" />
+        <img src={a.url} width={a.width} height={a.height} alt={a.name} loading="lazy" style={({ width, height })} />
       </FormattedLink>
     </div>
 
@@ -185,7 +185,7 @@ function Attachment({ a }: { a: AttachmentData }) {
       className={`flex max-w-xl ${a.spoiler ? "blur-xl hover:blur-0" : ""} my-1`}
       style={({ width, height })}
     >
-      <video src={a.url} width={a.width} height={a.height} title={a.name} controls />
+      <video src={a.url} width={a.width} height={a.height} title={a.name} controls style={({ width, height })} />
     </div>
 
   return <div className={`flex items-center max-w-xl ${a.spoiler ? "blur-xl hover:blur-0" : ""} my-1 bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-900 rounded-lg`}>
