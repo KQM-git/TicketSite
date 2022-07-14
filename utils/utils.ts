@@ -100,3 +100,5 @@ export function getUser(id: string, transcript: Transcript) {
         verified: null
     }
 }
+
+export const dateFormatter = new Intl.DateTimeFormat(undefined, { month: "long", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit", weekday: "short" })

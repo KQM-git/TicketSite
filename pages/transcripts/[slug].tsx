@@ -12,9 +12,10 @@ import ReactMarkdown from "react-markdown"
 import Twemoji from "react-twemoji"
 import FormattedLink from "../../components/FormattedLink"
 import Main from "../../components/Main"
+import { Avatar, Username } from "../../components/User"
 import { fetchTranscript } from "../../utils/db"
 import { AttachmentData, EmbedData, Message, MessageGroup, Reaction, Transcript, User } from "../../utils/types"
-import { getUser, parseTranscript } from "../../utils/utils"
+import { dateFormatter, getUser, parseTranscript } from "../../utils/utils"
 import styles from "../style.module.css"
 
 interface Props {
@@ -115,7 +116,6 @@ function Evidence({ transcript }: { transcript: Transcript }) {
     }} className="bg-green-600 disabled:bg-gray-900 text-slate-50 disabled:text-slate-400 w-fit px-3 py-1 text-center rounded-lg mt-3 cursor-pointer float-right">Show evidence markdown</button>
 }
 
-const dateFormatter = new Intl.DateTimeFormat(undefined, { month: "long", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit", weekday: "short" })
 function MessageGroup({ group, transcript }: { group: MessageGroup, transcript: Transcript }) {
   return <div className={`grid ${styles.gridAuto1} mt-2`} id={group.msg[0]?.discordId}>
     <div>
@@ -299,21 +299,6 @@ function Formatter({ content, transcript }: { transcript: Transcript, content: s
       {elements}
     </span>
   </Twemoji>
-}
-
-function Avatar({ user, size }: { user: User, size: string }) {
-  return <img
-    src={(user.avatar && `https://cdn.discordapp.com/avatars/${user.discordId}/${user.avatar}.png`) ?? "https://cdn.discordapp.com/attachments/247122362942619649/980958465566572604/unknown.png"}
-    className={`w-${size} h-${size} inline-block rounded-full`}
-    loading="lazy"
-    alt="Avatar"
-  />
-}
-
-function Username({ user }: {user: User}) {
-  return <span className="font-semibold" title={`${user.username ?? "???"}#${user.tag}`} style={({
-    color: user.roleColor == "#000000" ? undefined : user.roleColor ?? undefined
-  })}>{user.nickname ?? user.username}</span>
 }
 
 export async function getStaticProps(context: GetStaticPropsContext): Promise<GetStaticPropsResult<Props>> {

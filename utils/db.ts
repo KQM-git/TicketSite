@@ -27,6 +27,7 @@ const userSelector = {
     bot: true,
     verified: true
 }
+
 export async function fetchTranscript(slug: string | string[] | undefined | null): Promise<Transcript | null> {
     if (typeof slug != "string")
         return null
@@ -162,4 +163,22 @@ export async function fetchMore(slug: string, offset: number): Promise<{messages
         messages: messages.map(m => ({ ...m, createdAt: m.createdAt.getTime(), editedAt: m.editedAt?.getTime() ?? null })),
         isDone: transcript.queuedTranscript == null
     }
+}
+
+export async function fetchVerifications() {
+    return (await prisma.verification.findMany({
+        orderBy: {
+            id: "asc"
+        },
+        include: {
+            verifier: {
+                select: userSelector
+            },
+            ticket: {
+                select: {
+                    name: true
+                }
+            }
+        }
+    })).map(v => ({ ...v, createdAt: v.createdAt.getTime() }))
 }
