@@ -29,7 +29,7 @@ interface Props {
   verifications: Verification[]
 }
 
-export default function Experiment({ verifications, location }: Props & { location: string }) {
+export default function Verifications({ verifications, location }: Props & { location: string }) {
   const desc = "List of verifications."
 
   return (
