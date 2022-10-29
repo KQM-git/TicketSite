@@ -19,7 +19,7 @@ export function parseTranscript(transcript: Transcript, all: boolean) {
 
     const contributorList = contributors ?? []
     let finding = "Finding: *Unknown*", evidence = "Evidence: *Unknown*", significance = "Significance: *Unknown*"
-    let nick = "Unknown", tag = "????"
+    let nick = "Unknown", tag = "????", lastEdit = 0
 
     for (const message of messages) {
         const content = message.content
@@ -46,12 +46,14 @@ export function parseTranscript(transcript: Transcript, all: boolean) {
         const user = users.find(u => u.discordId == message.userId)
         nick = user?.username ?? "Unknown"
         tag = user?.tag ?? "????"
+        lastEdit = Math.max(message.editedAt || message.createdAt, lastEdit)
     }
 
     if (!contributorList.includes(`${nick}\\#${tag}`))
         contributorList.unshift(`${nick}\\#${tag}`)
 
     const date = new Date(transcript.createdAt).toISOString().split("T")[0]
+    const lastEditDate = new Date(lastEdit || transcript.createdAt).toISOString().split("T")[0]
 
     const findings = `${finding}
 
@@ -71,7 +73,8 @@ ${significance}`
     return `### ${beautifiedChannel}
 
 **By:** ${contributorList.join(", ")}  
-**Added:** ${date}  
+**Added:** <Version date="${date}" />  
+**Last tested:** <VersionHl date="${lastEditDate}" />  
 [Discussion](https://tickets.deeznuts.moe/transcripts/${slug})
 
 ${findings}
