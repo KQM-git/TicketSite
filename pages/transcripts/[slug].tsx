@@ -87,7 +87,7 @@ async function fetchData(slug: string, offset: number, setHasMore: Dispatch<SetS
 
 function Evidence({ transcript }: { transcript: Transcript }) {
   const [expanded, setExpanded] = useState(false)
-  const [all, setAllFindings] = useState(false)
+  const [all, setAllFindings] = useState(true)
 
   const md = parseTranscript(transcript, all)
   return expanded ?
