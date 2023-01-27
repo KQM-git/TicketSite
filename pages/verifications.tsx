@@ -104,20 +104,18 @@ export async function getStaticProps(): Promise<GetStaticPropsResult<Props>> {
     const verifications = await fetchVerifications()
     if (!verifications)
       return {
-        notFound: true,
-        revalidate: 300
+        notFound: true
       }
 
     return {
       props: {
         verifications
       },
-      revalidate: 3600
     }
   } catch (error) {
     return {
       notFound: true,
-      revalidate: 15 * 60
+      revalidate: 60
     }
   }
 }

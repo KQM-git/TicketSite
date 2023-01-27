@@ -88,7 +88,8 @@ export const getServerSideProps: GetServerSideProps<Props> = async function (ctx
   } catch (error) {
     console.log(error)
     return {
-      notFound: true
+      notFound: true,
+      revalidate: 60
     }
   }
 }
