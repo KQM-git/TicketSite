@@ -20,9 +20,10 @@ import styles from "../style.module.css"
 
 interface Props {
   transcript: Transcript
+  host: string
 }
 
-export default function Experiment({ transcript, location }: Props & { location: string }) {
+export default function Experiment({ transcript, host }: Props) {
   const desc = `Transcript for ${transcript.channelName} (${transcript.messageCount} messages).`
 
   const messageGroups: MessageGroup[] = []
@@ -52,7 +53,7 @@ export default function Experiment({ transcript, location }: Props & { location:
         <meta name="description" content={desc} />
       </Head>
 
-      <Evidence transcript={transcript} />
+      <Evidence transcript={transcript} host={window?.location?.href ?? host} />
       {transcript.queuedBy && <div className="font-bold text-4xl text-red-700 dark:text-red-400">This ticket is still being transcribed, please wait until all messages have been added...</div>}
       <div className={`grid ${styles.gridAuto1} gap-2`}>
         <img src={(transcript.server.icon && `https://cdn.discordapp.com/icons/${transcript.server.id}/${transcript.server.icon}.png`) ?? "./img/empty.png"} width={128} height={128} className="w-24 h-24" alt="Server Icon" />
@@ -85,11 +86,11 @@ async function fetchData(slug: string, offset: number, setHasMore: Dispatch<SetS
   setMessages(messages.concat(await msg.json() as Message[]))
 }
 
-function Evidence({ transcript }: { transcript: Transcript }) {
+function Evidence({ transcript, host }: { transcript: Transcript, host: string }) {
   const [expanded, setExpanded] = useState(false)
   const [all, setAllFindings] = useState(true)
 
-  const md = parseTranscript(transcript, all)
+  const md = parseTranscript(transcript, all, host)
   return expanded ?
     <div className="dark:bg-slate-600 bg-slate-200 rounded-xl my-2 p-2">
       <button onClick={() => {
@@ -314,7 +315,8 @@ export async function getStaticProps(context: GetStaticPropsContext): Promise<Ge
 
     return {
       props: {
-        transcript
+        transcript,
+        host: process.env["HOST"] ?? "localhost"
       },
       revalidate: transcript.queuedBy ? 60 : 3600
     }

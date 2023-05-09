@@ -14,7 +14,7 @@ export function clean(input: string) {
     return input.replace(/ ?\$\{.*?\}/g, "").replace(/ ?\(.*?\)/g, "").replace(/[*[\]]/g, "").split("\n")[0]
 }
 
-export function parseTranscript(transcript: Transcript, all: boolean) {
+export function parseTranscript(transcript: Transcript, all: boolean, host: string) {
     const { messages, users, slug, contributors } = transcript
 
     const contributorList = contributors ?? []
@@ -75,7 +75,7 @@ ${significance}`
 **By:** ${contributorList.join(", ")}  
 **Added:** <Version date="${date}" />  
 **Last tested:** <VersionHl date="${lastEditDate}" />  
-[Discussion](https://tickets.deeznuts.moe/transcripts/${slug})
+[Discussion](${host}/transcripts/${slug})
 
 ${findings}
 `.trim()
