@@ -53,7 +53,7 @@ export default function Experiment({ transcript, host }: Props) {
         <meta name="description" content={desc} />
       </Head>
 
-      <Evidence transcript={transcript} host={window?.location?.href ?? host} />
+      <Evidence transcript={transcript} host={host} />
       {transcript.queuedBy && <div className="font-bold text-4xl text-red-700 dark:text-red-400">This ticket is still being transcribed, please wait until all messages have been added...</div>}
       <div className={`grid ${styles.gridAuto1} gap-2`}>
         <img src={(transcript.server.icon && `https://cdn.discordapp.com/icons/${transcript.server.id}/${transcript.server.icon}.png`) ?? "./img/empty.png"} width={128} height={128} className="w-24 h-24" alt="Server Icon" />
@@ -316,7 +316,7 @@ export async function getStaticProps(context: GetStaticPropsContext): Promise<Ge
     return {
       props: {
         transcript,
-        host: process.env["HOST"] ?? "localhost"
+        host: process.env["HOST"] ?? "https://localhost:3000"
       },
       revalidate: transcript.queuedBy ? 60 : 3600
     }
