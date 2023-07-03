@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 import { User } from "../utils/types"
+import { getUsername } from "../utils/utils"
 
 
 export function Avatar({ user, size }: { user: User, size: string }) {
@@ -12,7 +13,7 @@ export function Avatar({ user, size }: { user: User, size: string }) {
 }
 
 export function Username({ user }: { user: User }) {
-    return <span className="font-semibold" title={`${user.username ?? "???"}#${user.tag}`} style={({
+    return <span className="font-semibold" title={getUsername(user.username ?? "???", user.tag ?? "0")} style={({
         color: user.roleColor == "#000000" ? undefined : user.roleColor ?? undefined
     })}>{user.nickname ?? user.username}</span>
 }

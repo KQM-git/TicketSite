@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client"
 import { Transcript, Message } from "./types"
+import { getUsername } from "./utils"
 
 export const prisma = new PrismaClient()
 
@@ -126,13 +127,11 @@ export async function fetchTranscript(slug: string | string[] | undefined | null
         mentionedRoles: fetched.mentionedRoles,
         createdAt: fetched.createdAt.getTime(),
         queuedBy: fetched.queuedTranscript?.transcriber?.username ?? null,
-        contributors: fetched.ticket?.contributors.map(c => `${c.username}\\#${c.tag}`) ?? null
+        contributors: fetched.ticket?.contributors.map(c => getUsername(c.username ?? "?", c.tag ?? "0")) ?? null
     }
 }
 
 export async function fetchMore(slug: string, offset: number): Promise<{messages: Message[], isDone: boolean } | null> {
-
-
     const transcript = await prisma.transcript.findUnique({
         where: { slug: slug },
         select: { id: true, queuedTranscript: { select: { id: true } } }
@@ -197,7 +196,13 @@ export async function fetchGuideTickets() {
             status: true,
             createdAt: true,
             creator: true,
-            deleted: true
+            deleted: true,
+            verifications: {
+                select: {
+                    type: true,
+                    verifier: true
+                }
+            }
         }
     })).map(v => ({ ...v, createdAt: v.createdAt.getTime() }))
 }

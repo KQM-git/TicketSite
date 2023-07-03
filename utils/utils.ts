@@ -14,12 +14,17 @@ export function clean(input: string) {
     return input.replace(/ ?\$\{.*?\}/g, "").replace(/ ?\(.*?\)/g, "").replace(/[*[\]]/g, "").split("\n")[0]
 }
 
+export function getUsername(username: string, tag: string) {
+    if (tag === "0") return `@${username}`
+    return `${username}#${tag}`
+}
+
 export function parseTranscript(transcript: Transcript, all: boolean, host: string) {
     const { messages, users, slug, contributors } = transcript
 
     const contributorList = contributors ?? []
     let finding = "Finding: *Unknown*", evidence = "Evidence: *Unknown*", significance = "Significance: *Unknown*"
-    let nick = "Unknown", tag = "????", lastEdit = 0
+    let nick = "Unknown", lastEdit = 0
 
     for (const message of messages) {
         const content = message.content
@@ -44,13 +49,12 @@ export function parseTranscript(transcript: Transcript, all: boolean, host: stri
             continue
 
         const user = users.find(u => u.discordId == message.userId)
-        nick = user?.username ?? "Unknown"
-        tag = user?.tag ?? "????"
+        nick = getUsername(user?.username ?? "Unknown", user?.tag ?? "0")
         lastEdit = Math.max(message.editedAt || message.createdAt, lastEdit)
     }
 
-    if (!contributorList.includes(`${nick}\\#${tag}`))
-        contributorList.unshift(`${nick}\\#${tag}`)
+    if (!contributorList.includes(nick))
+        contributorList.unshift(nick)
 
     const date = new Date(transcript.createdAt).toISOString().split("T")[0]
     const lastEditDate = new Date(lastEdit || transcript.createdAt).toISOString().split("T")[0]
@@ -72,7 +76,7 @@ ${significance}`
 
     return `### ${beautifiedChannel}
 
-**By:** ${contributorList.join(", ")}  
+**By:** ${contributorList.join(", ").replace(/#/g, "\\#")}  
 **Added:** <Version date="${date}" />  
 **Last tested:** <VersionHl date="${lastEditDate}" />  
 [Discussion](${host}/transcripts/${slug})
@@ -87,6 +91,8 @@ function getDomain(str: string) {
         return "YouTube"
     if (["i.imgur.com", "imgur.com"].includes(url.hostname))
         return "Imgur"
+    if (["docs.google.com"].includes(url.hostname))
+        return "Google Docs"
     return url.hostname
 }
 
