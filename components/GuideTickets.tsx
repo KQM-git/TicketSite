@@ -1,7 +1,7 @@
 import { User } from "@prisma/client"
 import { useState } from "react"
 import { Avatar, Username } from "../components/User"
-import styles from "./style.module.css"
+import styles from "../pages/style.module.css"
 
 export interface GuideTicket {
   id: number;
