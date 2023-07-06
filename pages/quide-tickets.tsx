@@ -8,21 +8,21 @@ interface Props {
   tickets: GuideTicket[]
 }
 
-export default function GuideTickets({ tickets, location }: Props & { location: string }) {
-  const desc = "List of guide tickets."
+export default function QuideTickets({ tickets, location }: Props & { location: string }) {
+  const desc = "List of quide tickets."
 
   return (
     <Main>
       <Head>
-        <title>Guide Tickets | KQM Transcripts</title>
+        <title>Quick Guide Tickets | KQM Transcripts</title>
         <meta name="twitter:card" content="summary" />
-        <meta property="og:title" content={"Guide Tickets | KQM Transcripts"} />
+        <meta property="og:title" content={"Quick Guide Tickets | KQM Transcripts"} />
         <meta property="og:description" content={desc} />
         <meta name="description" content={desc} />
       </Head>
 
       <h1 className="text-5xl font-bold pb-2">
-        Guide Tickets
+        Quick Guide Tickets
       </h1>
 
       <div className="clear-both"/>
@@ -35,7 +35,7 @@ export default function GuideTickets({ tickets, location }: Props & { location: 
 
 export const getServerSideProps: GetServerSideProps<Props> = async function (ctx) {
   try {
-    const tickets = await fetchTickets("guide")
+    const tickets = await fetchTickets("quick_guide")
     if (!tickets)
       return {
         notFound: true,

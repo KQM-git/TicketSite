@@ -182,13 +182,13 @@ export async function fetchVerifications() {
     })).map(v => ({ ...v, createdAt: v.createdAt.getTime() }))
 }
 
-export async function fetchGuideTickets() {
+export async function fetchTickets(type: string) {
     return (await prisma.ticket.findMany({
         orderBy: {
             id: "asc"
         },
         where: {
-            type: "guide"
+            type
         },
         select: {
             id: true,
