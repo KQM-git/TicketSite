@@ -202,6 +202,11 @@ export async function fetchTickets(type: string) {
                     type: true,
                     verifier: true
                 }
+            },
+            transcript: {
+                select: {
+                    slug: true
+                }
             }
         }
     })).map(v => ({ ...v, createdAt: v.createdAt.getTime() }))
