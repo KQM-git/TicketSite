@@ -69,7 +69,7 @@ export default function Experiment({ transcript, host }: Props) {
         hasMore={hasMore}
         loader={<h4>Loading...</h4>}
       >
-        {messageGroups.map((group, i) => <MessageGroup key={i} group={group} transcript={transcript} />)}
+        {messageGroups.map((group, i) => <MessageGroupElement key={i} group={group} transcript={transcript} />)}
       </InfiniteScroll>
 
     </Main>
@@ -117,7 +117,7 @@ function Evidence({ transcript, host }: { transcript: Transcript, host: string }
     }} className="bg-green-600 disabled:bg-gray-900 text-slate-50 disabled:text-slate-400 w-fit px-3 py-1 text-center rounded-lg mt-3 cursor-pointer float-right">Show evidence markdown</button>
 }
 
-function MessageGroup({ group, transcript }: { group: MessageGroup, transcript: Transcript }) {
+function MessageGroupElement({ group, transcript }: { group: MessageGroup, transcript: Transcript }) {
   return <div className={`grid ${styles.gridAuto1} mt-2`} id={group.msg[0]?.discordId}>
     <div>
       {group.msg[0]?.reply && <div className="h-4" />}
@@ -130,13 +130,13 @@ function MessageGroup({ group, transcript }: { group: MessageGroup, transcript: 
       <Username user={group.user} />
       <span className="text-sm text-slate-700 dark:text-slate-400 ml-2">{dateFormatter.format(group.msg[0].createdAt)}</span>
       <div>
-        {group.msg.map((msg, j) => <Message key={j} msg={msg} transcript={transcript} />)}
+        {group.msg.map((msg, j) => <MessageElement key={j} msg={msg} transcript={transcript} />)}
       </div>
     </div>
   </div>
 }
 
-function Message({ msg, transcript, }: { msg: Message, transcript: Transcript }) {
+function MessageElement({ msg, transcript, }: { msg: Message, transcript: Transcript }) {
   return <div className="mb-1 w-full rounded-lg" id={msg.discordId}>
     <Formatter content={msg.content} transcript={transcript} />
     {msg.embeds?.length > 0 && <div>{msg.embeds.map((e, i) => <Embed key={i} e={e as EmbedData} transcript={transcript} />)}</div>}
