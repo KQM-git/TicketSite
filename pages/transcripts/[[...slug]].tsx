@@ -14,7 +14,7 @@ import FormattedLink from "../../components/FormattedLink"
 import Main from "../../components/Main"
 import { Avatar, Username } from "../../components/User"
 import { fetchTranscript } from "../../utils/db"
-import { AttachmentData, EmbedData, Message, MessageGroup, Reaction, Transcript, User } from "../../utils/types"
+import { AttachmentData, EmbedData, Message, MessageGroup, Reaction, Transcript } from "../../utils/types"
 import { dateFormatter, getUser, parseTranscript } from "../../utils/utils"
 import styles from "../style.module.css"
 
@@ -304,9 +304,12 @@ function Formatter({ content, transcript }: { transcript: Transcript, content: s
 
 export async function getStaticProps(context: GetStaticPropsContext): Promise<GetStaticPropsResult<Props>> {
   try {
-    const slug = context.params?.slug
+    const param = context.params?.slug
+    if (!param) return { notFound: true }
+    if (typeof param === "string") return { notFound: true }
+    const [slug, offset] = param
 
-    const transcript = await fetchTranscript(slug)
+    const transcript = await fetchTranscript(slug, offset)
     if (!transcript)
       return {
         notFound: true,
@@ -340,7 +343,7 @@ export async function getStaticPaths(): Promise<GetStaticPathsResult> {
 
   return {
     paths: slugs?.map(s => ({
-      params: { slug: s.slug }
+      params: { slug: [s.slug] }
     })) ?? [],
     fallback: "blocking"
   }

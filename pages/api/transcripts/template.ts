@@ -7,7 +7,7 @@ export default async function api(req: NextApiRequest, res: NextApiResponse) {
 
     const { slug = null } = req.query
 
-    const transcript = await fetchTranscript(slug)
+    const transcript = await fetchTranscript(slug, null)
     if (!transcript)
         return res.status(404).json({ error: "Not found" })
 

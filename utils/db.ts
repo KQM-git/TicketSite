@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client"
-import { Transcript, Message } from "./types"
+import { Message, Transcript } from "./types"
 import { getUsername } from "./utils"
 
 export const prisma = new PrismaClient()
@@ -29,7 +29,7 @@ const userSelector = {
     verified: true
 }
 
-export async function fetchTranscript(slug: string | string[] | undefined | null): Promise<Transcript | null> {
+export async function fetchTranscript(slug: string | string[] | undefined | null, discordId: string | undefined | null): Promise<Transcript | null> {
     if (typeof slug != "string")
         return null
 
@@ -93,11 +93,28 @@ export async function fetchTranscript(slug: string | string[] | undefined | null
         }
     })
 
+    const offset = discordId ? (await prisma.message.findFirst({
+        where: {
+            transcriptId: fetched.id,
+            discordId: {
+                lte: discordId
+            }
+        },
+        orderBy: {
+            id: "asc"
+        },
+        select: {
+            id: true
+        }
+    }))?.id : undefined
+
+    const cursor = offset ? { id: offset } : undefined
     const messages = await prisma.message.findMany({
         where: {
             transcriptId: fetched.id
         },
         select: messageSelector,
+        cursor,
         orderBy: {
             id: "desc"
         },
