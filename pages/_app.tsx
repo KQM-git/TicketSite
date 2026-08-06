@@ -1,7 +1,6 @@
 import type { AppProps } from "next/app"
 import Head from "next/head"
 import { useEffect } from "react"
-import "tailwindcss/tailwind.css"
 import Footer from "../components/Footer"
 import "../public/global.css"
 import * as gtag from "../utils/gtag"

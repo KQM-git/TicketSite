@@ -1,6 +1,6 @@
-import { Component } from "react"
+import { Component, PropsWithChildren } from "react"
 
-export default class Main extends Component<{ className?: string, homePage?: true }> {
+export default class Main extends Component<PropsWithChildren<{ className?: string, homePage?: true }>> {
   render() {
     const classes =
       (!this.props.homePage ? "max-w-5xl w-full px-1" : "") +

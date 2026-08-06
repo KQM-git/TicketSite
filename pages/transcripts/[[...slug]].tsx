@@ -1,19 +1,18 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { DiscordMarkdown, DiscordReactions } from "@discord-message-components/react"
-import { PrismaClient } from "@prisma/client"
 import Color from "color"
 import copy from "copy-to-clipboard"
 import { GetStaticPathsResult, GetStaticPropsContext, GetStaticPropsResult } from "next"
 import Head from "next/head"
-import { Dispatch, SetStateAction, useState } from "react"
+import { Dispatch, ReactElement, SetStateAction, useState } from "react"
 import InfiniteScroll from "react-infinite-scroll-component"
 import ReactMarkdown from "react-markdown"
 import Twemoji from "react-twemoji"
 import FormattedLink from "../../components/FormattedLink"
 import Main from "../../components/Main"
 import { Avatar, Username } from "../../components/User"
-import { fetchTranscript } from "../../utils/db"
+import { fetchTranscript, prisma } from "../../utils/db"
 import { AttachmentData, EmbedData, Message, MessageGroup, Reaction, Transcript } from "../../utils/types"
 import { dateFormatter, getUser, parseTranscript } from "../../utils/utils"
 import styles from "../style.module.css"
@@ -173,7 +172,7 @@ function Attachment({ a }: { a: AttachmentData }) {
 
   if ([".png", ".jpg", ".jpeg", ".gif", ".webp"].some(x => url.pathname.toLowerCase().endsWith(x)))
     return <div
-      className={`flex max-w-xl ${a.spoiler ? "blur-xl hover:blur-0" : ""} my-1`}
+      className={`flex max-w-xl ${a.spoiler ? "blur-xl hover:blur-none" : ""} my-1`}
       style={({ width, height })}
     >
       <FormattedLink href={a.url} target="_blank">
@@ -183,13 +182,13 @@ function Attachment({ a }: { a: AttachmentData }) {
 
   if ([".mp4", ".mov", ".webm", ".avi", ".flv"].some(x => url.pathname.toLowerCase().endsWith(x)))
     return <div
-      className={`flex max-w-xl ${a.spoiler ? "blur-xl hover:blur-0" : ""} my-1`}
+      className={`flex max-w-xl ${a.spoiler ? "blur-xl hover:blur-none" : ""} my-1`}
       style={({ width, height })}
     >
       <video src={a.url} width={a.width} height={a.height} title={a.name} controls style={({ width, height })} />
     </div>
 
-  return <div className={`flex items-center max-w-xl ${a.spoiler ? "blur-xl hover:blur-0" : ""} my-1 bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-900 rounded-lg`}>
+  return <div className={`flex items-center max-w-xl ${a.spoiler ? "blur-xl hover:blur-none" : ""} my-1 bg-slate-200 dark:bg-slate-800 border border-slate-400 dark:border-slate-900 rounded-lg`}>
     <img src="/img/attachment.png" alt="Attachment" width={72} height={96} className="h-10 m-2 ml-3 w-auto" />
     <div className="m-1">
       <FormattedLink href={a.url} target="_blank">Attachment: {a.name}</FormattedLink>
@@ -212,7 +211,7 @@ function Embed({ e, transcript }: { e: EmbedData, transcript: Transcript }) {
 
   return <div className={`grid ${styles.gridAuto1} max-w-xl`}>
     <div className="w-1 rounded-l" style={({ backgroundColor: (e.color ?? "#2F3136") })} />
-    <div className="flex flex-col p-2 rounded-r bg-slate-200 dark:bg-slate-800 dark:bg-opacity-75 bg-opacity-75">
+    <div className="flex flex-col p-2 rounded-r bg-slate-200/75 dark:bg-slate-800/75">
       {e.title && e.url ?
         <FormattedLink className="font-bold" target="_blank" href={e.url}>{e.title}</FormattedLink>
         :
@@ -260,7 +259,7 @@ function Reply({ replyId, transcript }: { replyId: string, transcript: Transcrip
 function Formatter({ content, transcript }: { transcript: Transcript, content: string }) {
   const any = /^(.*?)<(#|@&|@!?)(\d{17,19})>/
 
-  const elements: JSX.Element[] = []
+  const elements: ReactElement[] = []
   let i = 0
 
   let match
@@ -285,8 +284,8 @@ function Formatter({ content, transcript }: { transcript: Transcript, content: s
       // roleColor = user?.roleColor
     }
 
-    elements.push(<span key={i++} title={title} className={`${styles.mention} bg cursor-pointer bg-opacity-30 hover:bg-opacity-75 transition-all`} style={({
-      backgroundColor: roleColor ? `${Color(roleColor).desaturate(0.3).rgb().toString().replace(")", "")}, var(--tw-bg-opacity)` : undefined
+    elements.push(<span key={i++} title={title} className={`${styles.mention} cursor-pointer transition-all`} style={({
+      backgroundColor: roleColor ? `rgb(${Color(roleColor).desaturate(0.3).rgb().round().array().join(" ")} / var(--mention-bg-opacity))` : undefined
     })}>{type.substring(0, 1)}{name}</span>)
 
     content = content.replace(full, "")
@@ -333,7 +332,6 @@ export async function getStaticProps(context: GetStaticPropsContext): Promise<Ge
 
 
 export async function getStaticPaths(): Promise<GetStaticPathsResult> {
-  const prisma = new PrismaClient()
   const slugs = await prisma.transcript.findMany({
     select: {
       slug: true

@@ -53,17 +53,24 @@
     }
 }
 
+/* Tailwind 4 removed the --tw-bg-opacity variable that used to be driven by
+   bg-opacity-*, so the mention background carries its own opacity variable. */
 .mention {
+    --mention-bg-opacity: 0.3;
     color: #3d3c3cdf;
-    background-color: rgba(127, 138, 255, var(--tw-bg-opacity));
+    background-color: rgba(127, 138, 255, var(--mention-bg-opacity));
     padding: 0 2px;
     border-radius: 4px;
+}
+
+.mention:hover {
+    --mention-bg-opacity: 0.75;
 }
 
 @media (prefers-color-scheme: dark) {
     .mention {
         color: #dee0fc;
-        background-color: rgba(88, 101, 242, var(--tw-bg-opacity));
+        background-color: rgba(88, 101, 242, var(--mention-bg-opacity));
     }
 }
 

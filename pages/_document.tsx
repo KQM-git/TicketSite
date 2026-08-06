@@ -5,8 +5,8 @@ import { GA_TRACKING_ID } from "../utils/gtag"
 export default class MyDocument extends Document {
   render() {
     return (
-      <Html>
-        <Head lang="en">
+      <Html lang="en">
+        <Head>
           <script
             dangerouslySetInnerHTML={{
               __html: `

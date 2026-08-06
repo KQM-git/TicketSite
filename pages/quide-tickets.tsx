@@ -50,7 +50,6 @@ export const getServerSideProps: GetServerSideProps<Props> = async function (ctx
     console.log(error)
     return {
       notFound: true,
-      revalidate: 60
     }
   }
 }

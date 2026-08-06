@@ -1,6 +1,4 @@
-/* eslint-disable @next/next/no-img-element */
-
-import { GetStaticPropsContext, GetStaticPropsResult } from "next"
+import { GetStaticPropsResult } from "next"
 import Head from "next/head"
 import FormattedLink from "../components/FormattedLink"
 import Main from "../components/Main"

@@ -1,8 +1,16 @@
+import { PrismaPg } from "@prisma/adapter-pg"
 import { PrismaClient } from "@prisma/client"
 import { Message, Transcript } from "./types"
 import { getUsername } from "./utils"
 
-export const prisma = new PrismaClient()
+// Prisma used to read ?schema= off the connection string itself, but driver
+// adapters hand the string straight to pg, which ignores it. Pull it out and
+// pass it to the adapter, or every query silently targets the public schema.
+const connectionString = process.env["DATABASE_URL"]
+const schema = connectionString ? new URL(connectionString).searchParams.get("schema") : null
+
+const adapter = new PrismaPg({ connectionString }, schema ? { schema } : undefined)
+export const prisma = new PrismaClient({ adapter })
 
 const messageSelector = {
     id: true,

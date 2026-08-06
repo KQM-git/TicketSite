@@ -1,3 +1,8 @@
+@import "tailwindcss";
+
+@source "../pages/**/*.{js,ts,jsx,tsx}";
+@source "../components/**/*.{js,ts,jsx,tsx}";
+
 blockquote {
     padding-left: 1.25rem/* 20px */;
     margin-bottom: 0.5rem/* 8px */;
@@ -7,8 +12,7 @@ strong {
     font-weight: 600;
 }
 a {
-    --tw-text-opacity: 1;
-    color: rgb(30 64 175 / var(--tw-text-opacity));
+    color: rgb(30 64 175);
     text-decoration-line: none;
     transition-property: all;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
@@ -16,8 +20,7 @@ a {
     font-weight: 600;
 }
 a:hover {
-    --tw-text-opacity: 1;
-    color: rgb(59 130 246 / var(--tw-text-opacity));
+    color: rgb(59 130 246);
 }
 th {
     font-weight: 600;
@@ -43,12 +46,10 @@ pre, code {
 
 @media (prefers-color-scheme: dark) {
     a {
-        --tw-text-opacity: 1;
-        color: rgb(219 234 254 / var(--tw-text-opacity));
+        color: rgb(219 234 254);
     }
     a:hover {
-        --tw-text-opacity: 1;
-        color: rgb(96 165 250 / var(--tw-text-opacity));
+        color: rgb(96 165 250);
     }
 }
 

@@ -1,0 +1,12 @@
+allowBuilds:
+  '@prisma/client': true
+  '@prisma/engines': true
+  prisma: true
+  sharp: true
+
+peerDependencyRules:
+  allowedVersions:
+    # Unmaintained (last release 0.2.1) and still peer-pins react ^17, but the
+    # components it exports work fine on react 19.
+    '@discord-message-components/react>react': '19'
+    '@discord-message-components/react>react-dom': '19'
